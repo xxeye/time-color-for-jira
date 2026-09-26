@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="zh-Hant">
+<html lang="en">
 <head>
 <meta charset="utf-8">
+<link rel="alternate" hreflang="zh-Hant" href="zh/">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Time color for Jira</title>
-<meta name="description" content="讓 Jira Cloud Timeline 更好讀的 Chrome 擴充功能：議題類型配色、週末與國定假日標記、工作天數。">
+<meta name="description" content="A Chrome extension that makes the Jira Cloud Timeline easier to read: issue type colors, weekends and public holidays, and working days.">
 <link rel="icon" href="icon128.png">
 <link rel="stylesheet" href="style.css">
 <script src="site.js" defer></script>
@@ -13,24 +14,24 @@
 <header class="top">
   <div class="wrap nav">
     <a class="brand" href="./"><img src="icon128.png" alt="" width="28" height="28">Time color for Jira</a>
-    <nav aria-label="網站導覽"><a href="#workflow">推薦用法</a><a href="#features">功能</a><a href="#start">開始使用</a><a href="privacy.html">隱私政策</a><a data-repo="" hidden>GitHub</a></nav>
+    <nav aria-label="Site"><a href="#workflow">How to use it</a><a href="#features">Features</a><a href="#start">Get started</a><a href="privacy.html">Privacy</a><a data-repo="" hidden>GitHub</a><a href="zh/" hreflang="zh-Hant" lang="zh-Hant">中文</a></nav>
   </div>
 </header>
 
 <main>
   <section class="wrap hero">
     <div>
-      <h1>讓 Jira Timeline <span class="nowrap">一眼看懂</span></h1>
-      <p class="lead">依團隊設定替 Planning Task、Milestone、Epic 上色，在時間軸上標出週末和國定假日，滑鼠移過去就知道要花幾個工作天。</p>
+      <h1>Read your Jira Timeline <span class="nowrap">at a glance</span></h1>
+      <p class="lead">Colors Planning Tasks, Milestones and Epics the way your team sets them up, marks weekends and public holidays on the timeline, and shows how many working days a bar takes when you hover over it.</p>
       <div class="cta">
-        <span class="badge">即將上架 Chrome 線上應用程式商店</span>
-        <a class="button" data-repo="" hidden>查看原始碼</a>
+        <span class="badge">Coming soon to the Chrome Web Store</span>
+        <a class="button" data-repo="" hidden>View source</a>
       </div>
-      <p class="fine">支援 Jira Cloud（*.atlassian.net）的專案 Timeline。</p>
+      <p class="fine">Works with project Timelines on Jira Cloud (*.atlassian.net).</p>
     </div>
     <!-- Sep–Nov 2026 at one column per day (--d): weekends, 9/28 and 10/9–10/10 holidays, today 9/14. -->
     <figure class="mock" aria-hidden="true">
-      <div class="mock-head"><span class="now">9 月</span><span>10 月</span><span>11 月</span></div>
+      <div class="mock-head"><span class="now">September</span><span>October</span><span>November</span></div>
       <div class="mock-body">
         <i class="m-holiday" style="left:calc(var(--d) * 27)"></i>
         <i class="m-holiday" style="left:calc(var(--d) * 38);width:calc(var(--d) * 2)"></i>
@@ -38,7 +39,7 @@
         <div class="m-row"><b class="m-bar epic" style="left:0;width:calc(var(--d) * 81)"></b></div>
         <div class="m-row"><b class="m-bar" style="left:0;width:calc(var(--d) * 25)"></b></div>
         <div class="m-row"><b class="m-diamond" style="left:calc(var(--d) * 44)"></b><span class="m-badge mid" style="left:calc(var(--d) * 44)">34/51 79% · DUE 10/14</span></div>
-        <div class="m-row"><b class="m-bar" style="left:calc(var(--d) * 27);width:calc(var(--d) * 19)"></b><span class="m-badge wd" style="left:calc(var(--d) * 46)">(工作天 13 天)</span></div>
+        <div class="m-row"><b class="m-bar" style="left:calc(var(--d) * 27);width:calc(var(--d) * 19)"></b><span class="m-badge wd" style="left:calc(var(--d) * 46)">(Working days: 13)</span></div>
         <div class="m-row"><b class="m-diamond" style="left:calc(var(--d) * 53)"></b><span class="m-badge low" style="left:calc(var(--d) * 53)">0/7 7% · DUE 10/23</span></div>
         <div class="m-row"><b class="m-bar" style="left:calc(var(--d) * 48);width:calc(var(--d) * 40)"></b></div>
       </div>
@@ -46,99 +47,99 @@
   </section>
 
   <section id="audience" class="wrap">
-    <h2>適合這樣的團隊</h2>
-    <p class="section-lead">同時進行好幾個短週期專案，每個專案都要美術、程式、QA、行銷等不同職種接力完成。</p>
+    <h2>Made for teams like this</h2>
+    <p class="section-lead">Several short projects run at the same time, and each one is handed from role to role: art, engineering, QA, marketing.</p>
     <div class="grid">
-      <article class="card"><h3>一個 Epic 就是一個專案</h3><p>例如一款小遊戲或一檔活動，幾週到幾個月就完成。</p></article>
-      <article class="card"><h3>多個專案同時進行</h3><p>好幾個專案排在同一條 Timeline 上，彼此的時程一眼就看得出來。</p></article>
-      <article class="card"><h3>各職種依排程接力</h3><p>每個職種照著排程接棒，用 Milestone 管理每個交付點。</p></article>
+      <article class="card"><h3>One Epic, one project</h3><p>For example a small game or a campaign, finished in a few weeks to a few months.</p></article>
+      <article class="card"><h3>Many projects at once</h3><p>All projects sit on one Timeline, so you can see how their schedules line up.</p></article>
+      <article class="card"><h3>Roles work in sequence</h3><p>Each role picks up its part on schedule, and Milestones mark every delivery.</p></article>
     </div>
-    <p class="fine audience-examples">例如：小遊戲工作室、遊戲營運活動、行銷活動、影音內容製作。</p>
+    <p class="fine audience-examples">For example: small game studios, live-ops events, marketing campaigns, video production.</p>
   </section>
 
   <section id="workflow" class="wrap">
-    <h2>推薦用法：一條 Timeline 排程，各職種看自己那一段</h2>
-    <p class="section-lead">這個插件是為「排程」和「執行」分開管理的團隊設計的。主看板負責排時程，各職種在自己的看板只看到自己那段排程，再開出實際要做的任務。</p>
+    <h2>Recommended setup: one Timeline for the schedule, one board per role</h2>
+    <p class="section-lead">The extension is designed for teams that keep scheduling and execution apart. The main board holds the schedule. Each role's board shows only its own part of that schedule, and the team creates the actual work items from there.</p>
     <figure class="flow" aria-hidden="true">
       <div class="mock flow-main">
-        <div class="flow-label">主看板 · 專案排程</div>
+        <div class="flow-label">Main board · Project schedule</div>
         <div class="f-row"><span class="f-tag epic">Epic</span><span class="f-track"><b class="f-bar epic" style="left:0;width:94%"></b></span></div>
-        <div class="f-row"><span class="f-tag">美術</span><span class="f-track"><b class="f-bar" style="left:3%;width:36%"></b></span></div>
-        <div class="f-row"><span class="f-tag">程式</span><span class="f-track"><b class="f-bar" style="left:26%;width:44%"></b></span></div>
-        <div class="f-row"><span class="f-tag ms">交付</span><span class="f-track"><b class="m-diamond" style="left:40%"></b><span class="m-badge low" style="left:40%">2/6 42% · DUE 10/23</span></span></div>
+        <div class="f-row"><span class="f-tag">Art</span><span class="f-track"><b class="f-bar" style="left:3%;width:36%"></b></span></div>
+        <div class="f-row"><span class="f-tag">Dev</span><span class="f-track"><b class="f-bar" style="left:26%;width:44%"></b></span></div>
+        <div class="f-row"><span class="f-tag ms">Ship</span><span class="f-track"><b class="m-diamond" style="left:40%"></b><span class="m-badge low" style="left:40%">2/6 42% · DUE 10/23</span></span></div>
         <div class="f-row"><span class="f-tag">QA</span><span class="f-track"><b class="f-bar" style="left:62%;width:32%"></b></span></div>
       </div>
-      <div class="flow-arrow">依「職種」篩選</div>
+      <div class="flow-arrow">Filtered by role</div>
       <div class="flow-boards">
         <div class="mock flow-board">
-          <div class="flow-label">美術看板</div>
-          <div class="f-row"><span class="f-tag">美術</span><span class="f-track"><b class="f-bar" style="left:0;width:70%"></b></span></div>
-          <div class="f-tasks"><span><i class="m-type story"></i>視覺設計定稿</span><span><i class="m-type story"></i>首頁插圖繪製</span></div>
+          <div class="flow-label">Art board</div>
+          <div class="f-row"><span class="f-tag">Art</span><span class="f-track"><b class="f-bar" style="left:0;width:70%"></b></span></div>
+          <div class="f-tasks"><span><i class="m-type story"></i>Final visual design</span><span><i class="m-type story"></i>Home page illustration</span></div>
         </div>
         <div class="mock flow-board">
-          <div class="flow-label">程式看板</div>
-          <div class="f-row"><span class="f-tag">程式</span><span class="f-track"><b class="f-bar" style="left:0;width:85%"></b></span></div>
-          <div class="f-tasks"><span><i class="m-type"></i>首頁版面切版</span><span><i class="m-type"></i>會員註冊表單串接</span></div>
+          <div class="flow-label">Dev board</div>
+          <div class="f-row"><span class="f-tag">Dev</span><span class="f-track"><b class="f-bar" style="left:0;width:85%"></b></span></div>
+          <div class="f-tasks"><span><i class="m-type"></i>Home page layout</span><span><i class="m-type"></i>Sign-up form API</span></div>
         </div>
         <div class="mock flow-board">
-          <div class="flow-label">QA 看板</div>
+          <div class="flow-label">QA board</div>
           <div class="f-row"><span class="f-tag">QA</span><span class="f-track"><b class="f-bar" style="left:0;width:60%"></b></span></div>
-          <div class="f-tasks"><span><i class="m-type"></i>註冊流程測試</span><span><i class="m-type bug"></i>行動版選單跑版</span></div>
+          <div class="f-tasks"><span><i class="m-type"></i>Sign-up flow test</span><span><i class="m-type bug"></i>Mobile menu layout bug</span></div>
         </div>
       </div>
     </figure>
     <div class="two">
       <div class="card">
-        <h3>議題類型怎麼分</h3>
+        <h3>Issue types</h3>
         <div class="table">
           <table>
-            <thead><tr><th>類型</th><th>用途</th></tr></thead>
+            <thead><tr><th>Type</th><th>Used for</th></tr></thead>
             <tbody>
-              <tr><td>Epic</td><td>一個短週期專案，例如一款小遊戲或一檔活動</td></tr>
-              <tr><td>Planning Task</td><td>某個職種在某段時間要做的工作，填起訖日期和「職種」</td></tr>
-              <tr><td>Milestone</td><td>重要交付日，關聯這天前要完成的任務</td></tr>
-              <tr><td>Task、Story、Bug…</td><td>實際動手做的工作</td></tr>
+              <tr><td>Epic</td><td>One short project, such as a small game or a campaign</td></tr>
+              <tr><td>Planning Task</td><td>A role's work over a period; set its start and due dates and its role</td></tr>
+              <tr><td>Milestone</td><td>A key delivery date, linked to the work that must be done by then</td></tr>
+              <tr><td>Task, Story, Bug…</td><td>The actual hands-on work</td></tr>
             </tbody>
           </table>
         </div>
       </div>
       <div class="card">
-        <h3>看板怎麼開</h3>
+        <h3>Boards</h3>
         <ol>
-          <li><strong>主看板</strong>的 Timeline 只放 Epic、Planning Task 和 Milestone，當作整個專案的排程表。</li>
-          <li><strong>各職種看板</strong>用篩選條件只顯示自己的 Planning Task，例如 <code>issuetype = "Planning Task" AND "職種" = "美術"</code>（依團隊需要，也可以一併篩入 Epic）。</li>
-          <li>照著 Planning Task 的時間開出執行任務，並關聯（relates to）到對應的 Milestone。</li>
+          <li>The <strong>main board</strong> Timeline shows only Epics, Planning Tasks and Milestones: the schedule for the whole project.</li>
+          <li><strong>Each role's board</strong> filters to its own Planning Tasks, e.g. <code>issuetype = "Planning Task" AND "Role" = "Art"</code> (add Epics too if your team wants them).</li>
+          <li>Create the work items for each Planning Task's period and link them (relates to) to the matching Milestone.</li>
         </ol>
       </div>
     </div>
     <div class="card helps">
-      <h3>插件在這個流程裡幫你</h3>
+      <h3>How the extension helps</h3>
       <ul class="list">
-        <li>用顏色分出排程和交付點，Milestone 顯示成菱形</li>
-        <li>滑鼠移到 Planning Task 上，看到負責的職種</li>
-        <li>排程時直接顯示扣掉週末和國定假日後的工作天數</li>
-        <li>Milestone 旁邊顯示完成度，移上去列出還剩哪些任務</li>
-        <li>Jira 管理員把設定寫進專案，同事裝好就能用，不用各自匯入設定檔</li>
+        <li>Colors separate the schedule from delivery dates, and Milestones show as diamonds</li>
+        <li>Hover over a Planning Task to see its role</li>
+        <li>See working days, with weekends and public holidays excluded, while you schedule</li>
+        <li>Milestones show their progress; hover to list the linked work still open</li>
+        <li>A Jira admin saves the settings in the project, so teammates just install and go, with no file to import</li>
       </ul>
-      <p class="fine">沒有照這個架構也能用：只要在設定檔指定你用來排程和標示交付點的議題類型，以及起始日期欄位，顏色、假日、工作天數等功能都照樣運作。議題類型也不一定要叫 Planning Task 或 Milestone。</p>
+      <p class="fine">You don't have to follow this setup. Tell the configuration which issue types you use for scheduling and for delivery dates, and which field holds the start date, and colors, holidays and working days all work the same. The issue types don't have to be called Planning Task or Milestone.</p>
     </div>
   </section>
 
   <section class="wrap showcase">
     <div>
-      <h2>移到 Milestone 上，關聯任務一次看完</h2>
-      <p>會列出每個關聯任務的狀態、起訖日期和標題，已完成的會劃掉。不用一個個點開，就知道還剩哪些工作。</p>
+      <h2>Hover over a Milestone to see all its linked work</h2>
+      <p>Each linked issue is listed with its status, dates and title; finished ones are struck through. You can see what's left without opening each issue.</p>
     </div>
     <figure class="mock tipmock" aria-hidden="true">
       <div class="m-tip">
-        <div class="m-tip-header">關聯任務 · 2／6 完成（含 1 進行中）</div>
+        <div class="m-tip-header">Linked issues · 2/6 done (1 in progress)</div>
         <div class="m-tip-body">
-          <div class="m-tip-item wip"><span class="m-tip-status">◐</span><i class="m-type"></i><span class="m-tip-date">10/5 ~ 10/16</span><span class="m-tip-summary">首頁版面切版</span></div>
-          <div class="m-tip-item"><span class="m-tip-status">○</span><i class="m-type"></i><span class="m-tip-date">10/12 ~ 10/20</span><span class="m-tip-summary">會員註冊表單串接</span></div>
-          <div class="m-tip-item"><span class="m-tip-status">○</span><i class="m-type story"></i><span class="m-tip-date">10/19 ~ 10/22</span><span class="m-tip-summary">內容上稿與校對</span></div>
-          <div class="m-tip-item"><span class="m-tip-status">○</span><i class="m-type bug"></i><span class="m-tip-date">- ~ -</span><span class="m-tip-summary">行動版選單跑版</span></div>
-          <div class="m-tip-item done"><span class="m-tip-status">✓</span><i class="m-type story"></i><span class="m-tip-date">9/21 ~ 9/30</span><span class="m-tip-summary">需求訪談紀錄</span></div>
-          <div class="m-tip-item done"><span class="m-tip-status">✓</span><i class="m-type"></i><span class="m-tip-date">9/28 ~ 10/2</span><span class="m-tip-summary">視覺設計定稿</span></div>
+          <div class="m-tip-item wip"><span class="m-tip-status">◐</span><i class="m-type"></i><span class="m-tip-date">10/5 ~ 10/16</span><span class="m-tip-summary">Home page layout</span></div>
+          <div class="m-tip-item"><span class="m-tip-status">○</span><i class="m-type"></i><span class="m-tip-date">10/12 ~ 10/20</span><span class="m-tip-summary">Sign-up form API</span></div>
+          <div class="m-tip-item"><span class="m-tip-status">○</span><i class="m-type story"></i><span class="m-tip-date">10/19 ~ 10/22</span><span class="m-tip-summary">Content upload and proofreading</span></div>
+          <div class="m-tip-item"><span class="m-tip-status">○</span><i class="m-type bug"></i><span class="m-tip-date">- ~ -</span><span class="m-tip-summary">Mobile menu layout bug</span></div>
+          <div class="m-tip-item done"><span class="m-tip-status">✓</span><i class="m-type story"></i><span class="m-tip-date">9/21 ~ 9/30</span><span class="m-tip-summary">Requirements interviews</span></div>
+          <div class="m-tip-item done"><span class="m-tip-status">✓</span><i class="m-type"></i><span class="m-tip-date">9/28 ~ 10/2</span><span class="m-tip-summary">Final visual design</span></div>
         </div>
       </div>
       <div class="m-tip-anchor"><b class="m-diamond"></b><span class="m-date">Oct 23, 2026</span></div>
@@ -146,125 +147,125 @@
   </section>
 
   <section id="features" class="wrap">
-    <h2>功能</h2>
+    <h2>Features</h2>
     <div class="grid">
-      <article class="card"><h3>議題類型配色</h3><p>Planning Task、Milestone 各用自己的顏色，Milestone 可以顯示成菱形，任務一多也好找。</p></article>
-      <article class="card"><h3>週末與假日</h3><p>管理員列出國定假日、公司休假日和補班日，休息日直接標在時間軸上。不連到任何外部網站。</p></article>
-      <article class="card"><h3>工作天數</h3><p>滑鼠移到條塊上或拖曳時，顯示扣掉週末和假日後的工作天數。</p></article>
-      <article class="card"><h3>Milestone 進度</h3><p>移到 Milestone 上，就能看到關聯任務、完成度和 Due date。</p></article>
-      <article class="card"><h3>專案設定</h3><p>設定可以寫在 Jira 專案裡，同事打開 Timeline 就自動套用；也可以匯入設定檔。</p></article>
-      <article class="card"><h3>配合深淺色</h3><p>自動跟著 Jira 的淺色或深色主題調整。</p></article>
+      <article class="card"><h3>Issue type colors</h3><p>Planning Tasks and Milestones each get their own color, and Milestones can show as diamonds, so they stay easy to find on a busy Timeline.</p></article>
+      <article class="card"><h3>Weekends and holidays</h3><p>Your admin lists public holidays, company days off and make-up workdays, and days off are marked on the timeline. No external calendar is contacted.</p></article>
+      <article class="card"><h3>Working days</h3><p>Hover over or drag a bar to see its working days, with weekends and holidays excluded.</p></article>
+      <article class="card"><h3>Milestone progress</h3><p>Hover over a Milestone to see its linked issues, progress and due date.</p></article>
+      <article class="card"><h3>Project settings</h3><p>Settings can be saved in the Jira project, so they apply as soon as teammates open the Timeline. You can also import a configuration file.</p></article>
+      <article class="card"><h3>Light and dark</h3><p>Follows Jira's light or dark theme automatically.</p></article>
     </div>
   </section>
 
   <section id="all-features" class="wrap">
-    <h2>完整功能</h2>
+    <h2>All features</h2>
     <div class="grid">
       <div class="card">
-        <h3>時間軸顯示</h3>
+        <h3>Timeline display</h3>
         <ul class="list">
-          <li>Planning Task、Milestone 自訂顏色，也可以保留 Jira 原本的顏色</li>
-          <li>Milestone 顯示成菱形，旁邊標出完成度與 Due date</li>
-          <li>依 Jira 專案設定的旗標，Epic 顯示虛線框</li>
-          <li>Target end 到 Due date 的區段加深</li>
-          <li>相依性線條調細、調淡</li>
-          <li>隱藏目前時段的高亮（今天的藍線保留）</li>
-          <li>隱藏左欄的議題編號</li>
+          <li>Custom colors for Planning Tasks and Milestones, or keep Jira's own colors</li>
+          <li>Milestones as diamonds, labeled with progress and due date</li>
+          <li>Dashed outline on Epics flagged by a Jira field</li>
+          <li>Darker shading from Target end to Due date</li>
+          <li>Thinner, lighter dependency lines</li>
+          <li>Hide the current period highlight (today's blue line stays)</li>
+          <li>Hide issue keys in the left column</li>
         </ul>
       </div>
       <div class="card">
-        <h3>日期</h3>
+        <h3>Dates</h3>
         <ul class="list">
-          <li>標出週末</li>
-          <li>標出管理員列出的休假日；補班日照常算工作天</li>
-          <li>滑鼠移到條塊上或拖曳時，顯示扣掉週末和假日的工作天數</li>
-          <li>可設定每週的休息日</li>
+          <li>Mark weekends</li>
+          <li>Mark the days off your admin lists; make-up workdays count as working days</li>
+          <li>Show working days, without weekends and holidays, when you hover over or drag a bar</li>
+          <li>Choose which days of the week are days off</li>
         </ul>
       </div>
       <div class="card">
-        <h3>滑鼠移上去</h3>
+        <h3>On hover</h3>
         <ul class="list">
-          <li>Planning Task：顯示負責的職種</li>
-          <li>Milestone：列出關聯任務的狀態、起訖日期和標題</li>
-          <li>已完成的任務劃線，進行中的排在最前面</li>
+          <li>Planning Task: shows its role</li>
+          <li>Milestone: lists linked issues with status, dates and title</li>
+          <li>Done issues are struck through; in-progress issues come first</li>
         </ul>
       </div>
       <div class="card">
-        <h3>操作</h3>
+        <h3>Controls</h3>
         <ul class="list">
-          <li>Milestone 只能整段移動，不會被拉長</li>
-          <li>方向鍵左右捲動時間軸（按住 Shift 捲得更快）</li>
-          <li>浮動工具列：暫停或啟用、重新讀取，位置可以拖曳調整</li>
+          <li>Milestones move as a whole and can't be stretched</li>
+          <li>Scroll the timeline with the left and right arrow keys (hold Shift to go faster)</li>
+          <li>Floating toolbar: pause or resume, reload; drag it anywhere</li>
         </ul>
       </div>
       <div class="card">
-        <h3>設定管理</h3>
+        <h3>Settings</h3>
         <ul class="list">
-          <li>匯入設定檔前先預覽，和現有設定重複時會先確認</li>
-          <li>匯出設定、還原上一份設定、移除站台</li>
-          <li>顏色和開關跟著 Chrome 同步到你的其他電腦</li>
-          <li>設定檔可以附上 Timeline 網址，一鍵開啟</li>
-          <li>內建管理員設定檔產生器，不用手寫 JSON</li>
+          <li>Preview a configuration file before importing; you're asked before anything is replaced</li>
+          <li>Export settings, restore the previous configuration, or remove a site</li>
+          <li>Colors and switches sync to your other computers through Chrome</li>
+          <li>A configuration file can include the Timeline URL for one-click opening</li>
+          <li>Built-in configuration generator for admins, no hand-written JSON</li>
         </ul>
       </div>
       <div class="card">
-        <h3>安全與隱私</h3>
+        <h3>Security and privacy</h3>
         <ul class="list">
-          <li>使用目前的 Jira 登入，不需要密碼或 API Token</li>
-          <li>任務資料只在你的瀏覽器裡使用，不會傳給開發者</li>
-          <li>沒有匯入設定的站台，不會發出任何 Jira 請求</li>
-          <li>只讀取資料，不會修改 Jira</li>
+          <li>Uses your current Jira sign-in; no password or API token needed</li>
+          <li>Issue data is used only in your browser and never sent to the developer</li>
+          <li>Sites without settings get no Jira requests at all</li>
+          <li>Reads data only; never changes anything in Jira</li>
         </ul>
       </div>
     </div>
   </section>
 
   <section id="start" class="wrap">
-    <h2>開始使用</h2>
+    <h2>Get started</h2>
     <div class="two">
       <div class="card">
-        <h3>一般使用者</h3>
+        <h3>Users</h3>
         <ol>
-          <li>安裝擴充功能。</li>
-          <li>點瀏覽器工具列上的插件圖示，選「設定管理」。</li>
-          <li>匯入 Jira 管理員提供的設定檔（JSON），確認後儲存。</li>
-          <li>打開 Jira 專案的 Timeline，就會自動套用。</li>
+          <li>Install the extension.</li>
+          <li>If your Jira admin saved the settings in the project, open the project's Timeline. That's it.</li>
+          <li>Otherwise, click the extension icon in the toolbar and choose <strong>Manage settings</strong>.</li>
+          <li>On <strong>Import &amp; manage</strong>, import the configuration file (JSON) from your admin, check the preview, and save.</li>
         </ol>
-        <p class="fine">使用你目前的 Jira 登入，不需要輸入密碼或 API Token。</p>
+        <p class="fine">Uses your current Jira sign-in. You never enter a password or API token.</p>
       </div>
       <div class="card">
-        <h3>Jira 管理員</h3>
+        <h3>Jira admins</h3>
         <ol>
-          <li>打開「設定管理」，切到「產生設定檔（管理員）」。</li>
-          <li>填入站台網址、議題類型 ID 和需要的欄位 ID。</li>
-          <li>下載設定檔，自己先匯入並打開 Timeline 確認。</li>
-          <li>沒問題後，把設定檔提供給使用者。</li>
+          <li>Open <strong>Manage settings</strong> and switch to <strong>Create configuration (admin)</strong>.</li>
+          <li>Enter the site URL, the issue type IDs and the field IDs you need.</li>
+          <li>Download the file, import it yourself and check the Timeline.</li>
+          <li>Then share the file with your users.</li>
         </ol>
-        <p class="fine">頁面上有查詢 ID 的連結，不用手寫 JSON。</p>
+        <p class="fine">The page links to where each ID can be found, so there's no JSON to write by hand.</p>
       </div>
     </div>
   </section>
 
   <section class="wrap">
-    <h2>支援範圍</h2>
+    <h2>Supported</h2>
     <ul class="plain">
-      <li>Jira Cloud 的專案 Timeline（網址為 https://*.atlassian.net）</li>
-      <li>目前不支援 Jira Server、Data Center 與自訂網域</li>
-      <li>介面語言：英文（預設）、繁體中文，依瀏覽器語言自動切換</li>
-      <li>Jira 介面語言：英文、繁體中文</li>
+      <li>Project Timelines on Jira Cloud (https://*.atlassian.net)</li>
+      <li>Not yet supported: Jira Server, Data Center and custom domains</li>
+      <li>Extension language: English (default) and Traditional Chinese, following your browser language</li>
+      <li>Jira language: English and Traditional Chinese</li>
     </ul>
   </section>
 
   <section class="wrap">
-    <h2>隱私</h2>
-    <p>Jira 的任務資料只在你的瀏覽器裡使用，不會傳給開發者，也沒有追蹤或分析。詳細內容請看<a href="privacy.html">隱私政策</a>。</p>
+    <h2>Privacy</h2>
+    <p>Jira issue data is used only in your browser. It is never sent to the developer, and there is no tracking or analytics. See the <a href="privacy.html">privacy policy</a> for details.</p>
   </section>
 </main>
 
 <footer class="foot">
   <div class="wrap">
-    <p>Time color for Jira 為獨立開發的工具，與 Atlassian 無關。Jira 是 Atlassian 的商標。</p>
-    <p><a href="privacy.html">隱私政策</a><a data-repo="/issues" hidden>問題回報</a><a data-repo="" hidden>GitHub</a></p>
+    <p>Time color for Jira is an independent tool and is not affiliated with Atlassian. Jira is a trademark of Atlassian.</p>
+    <p><a href="privacy.html">Privacy policy</a><a data-repo="/issues" hidden>Report an issue</a><a data-repo="" hidden>GitHub</a></p>
   </div>
 </footer>
 </body>

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<link rel="alternate" hreflang="en" href="../privacy.html">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>隱私政策 · Time color for Jira</title>
+<meta name="description" content="Time color for Jira 會處理哪些資料、存放在哪裡，以及如何刪除。">
+<link rel="icon" href="../icon128.png">
+<link rel="stylesheet" href="../style.css">
+<script src="../site.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap nav">
+    <a class="brand" href="./"><img src="../icon128.png" alt="" width="28" height="28">Time color for Jira</a>
+    <nav aria-label="網站導覽"><a href="./#workflow">推薦用法</a><a href="./#features">功能</a><a href="./#start">開始使用</a><a href="privacy.html" aria-current="page">隱私政策</a><a data-repo="" hidden>GitHub</a><a href="../privacy.html" hreflang="en" lang="en">English</a></nav>
+  </div>
+</header>
+
+<main class="wrap doc">
+  <h1>隱私政策</h1>
+  <p class="meta">最後更新：2026 年 9 月 25 日</p>
+  <p>Time color for Jira（以下稱「本插件」）是獨立開發的 Chrome 擴充功能，與 Atlassian 無關。這份說明會告訴你本插件處理哪些資料、存放在哪裡，以及怎麼刪除。</p>
+
+  <div class="summary">
+    <h2 style="margin-top:8px">重點整理</h2>
+    <ul>
+      <li>本插件<strong>沒有開發者伺服器</strong>，不會把你的 Jira 任務資料傳給開發者，也沒有追蹤或分析。</li>
+      <li>Jira 任務資料只在<strong>你的瀏覽器裡</strong>讀取、計算和顯示。</li>
+      <li>站台設定和顏色偏好會跟著 <strong>Chrome 同步</strong>到你的其他電腦，任務內容不會同步。</li>
+      <li>本插件<strong>只和你正在使用的 Jira 站台連線</strong>，不會連到其他網站。假日清單由 Jira 管理員寫在設定檔或 Jira 專案設定裡。</li>
+    </ul>
+  </div>
+
+  <h2>1. 本插件處理的資料</h2>
+
+  <h3>1.1 Jira 任務資料</h3>
+  <p>本插件只在 Jira Cloud（<code>*.atlassian.net</code>）的專案 Timeline 執行，在 Confluence 頁面不會執行。開啟 Timeline 時，本插件會使用瀏覽器目前的 Jira 登入，先向<strong>同一個 Jira 站台</strong>讀取該專案的 ID 和管理員寫在專案裡的設定（專案屬性 <code>time-color-for-jira</code>，沒有就略過）。有設定（專案設定或你匯入的設定檔）時，才會再讀取顯示需要的資料：</p>
+  <ul>
+    <li>議題類型、摘要、狀態、起始日期、Due date 和議題關聯</li>
+    <li>管理員設定檔中指定的自訂欄位值</li>
+    <li>站台的欄位、議題類型、關聯類型清單（用來確認設定是否可用）</li>
+    <li>專案 ID 與專案設定（用來判斷套用哪一份設定）</li>
+  </ul>
+  <p>這些資料只暫存在該分頁的記憶體中，有數量和時間上限，<strong>不會寫入</strong>插件的儲存空間，也不會透過 Chrome 同步。關閉分頁、停用插件，或在設定頁重新讀取時就會清除。你能看到哪些資料，完全取決於你的 Jira 帳號權限。本插件<strong>不會修改</strong>任何 Jira 資料。</p>
+
+  <h3>1.2 帳號識別</h3>
+  <p>為了判斷你有沒有登入、是否切換了 Jira 帳號（避免把上一個帳號的暫存資料顯示給下一個帳號），本插件會查詢 Jira 的「目前使用者」，但<strong>只在記憶體中保留帳號 ID</strong>，不會儲存、同步或傳到其他地方。</p>
+
+  <h3>1.3 登入憑證</h3>
+  <p>本插件不會讀取、要求或保存你的 Jira 密碼、API Token 或 Cookie。對 Jira 的請求由瀏覽器自動帶上你目前的登入狀態。</p>
+
+  <h3>1.4 設定與偏好</h3>
+  <p>下列設定存放在 Chrome 擴充功能的儲存空間：</p>
+  <ul>
+    <li>Jira 站台網址、專案範圍</li>
+    <li>議題類型、自訂欄位、關聯類型的 ID 與顯示規則</li>
+    <li>假日與補班日清單（寫在設定檔裡時）</li>
+    <li>顏色、顯示開關，以及浮動工具列的位置</li>
+  </ul>
+  <p>如果你的 Chrome 有開啟同步，這些設定會透過 Google 的 Chrome 同步功能傳到登入同一個帳號的其他電腦，由 Google 依其隱私權政策處理。請注意，站台網址和欄位設定可能看得出你所屬的組織。</p>
+  <p>下列資料<strong>只存在這台電腦、不會同步</strong>：還沒儲存的匯入草稿，以及上一份管理員設定的備份。從 Jira 專案讀到的設定只在該分頁的記憶體中使用，不會儲存。</p>
+
+  <h3>1.5 管理員設定檔產生器</h3>
+  <p>設定頁的「產生設定檔（管理員）」只在該頁面處理你填的內容，不會連線 Jira、不會上傳，也不會儲存，關閉頁面就清空。下載的設定檔由你自己保管。你點了頁面上的查詢 ID 連結時，會在新分頁打開 Jira，使用該分頁的登入狀態。</p>
+
+  <h2>2. 資料分享</h2>
+  <p>本插件不會出售、出租或分享你的資料。資料只會送到下列對象，而且都是功能運作所必需：</p>
+  <div class="table">
+    <table>
+      <thead><tr><th>對象</th><th>內容</th><th>用途</th></tr></thead>
+      <tbody>
+        <tr><td>你正在使用的 Jira Cloud 站台（Atlassian）</td><td>同站台的唯讀查詢</td><td>讀取要顯示的任務資料</td></tr>
+        <tr><td>Google Chrome 同步</td><td>設定與偏好（不含任務資料）</td><td>依你的 Chrome 同步設定，同步到你的其他電腦</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>3. 保存與刪除</h2>
+  <ul>
+    <li><strong>任務資料暫存</strong>：關閉分頁就會清除；也可以在「設定管理 → 備份與其他操作 → 重新讀取已開啟的 Jira」清除。</li>
+    <li><strong>站台設定</strong>：在「設定管理」按「移除此站台」。</li>
+    <li><strong>顏色和開關</strong>：在面板按「重設個人偏好」。</li>
+    <li><strong>全部資料</strong>：到 Chrome 的擴充功能頁面移除本插件，這台電腦上的資料會一起刪除。其他電腦上已同步的設定，何時刪除取決於 Chrome 同步。</li>
+  </ul>
+
+  <h2>4. Chrome 線上應用程式商店使用者資料政策</h2>
+  <p lang="en">The use of information received from Google APIs will adhere to the Chrome Web Store User Data Policy, including the Limited Use requirements.</p>
+  <p>本插件使用資料的方式遵守 Chrome 線上應用程式商店的使用者資料政策與「有限使用」規定：資料只用在本插件的功能上，不用於廣告，不出售，也不會在你不同意的情況下讓任何人查看。</p>
+
+  <h2>5. 政策更新</h2>
+  <p>內容有變動時會更新這個頁面，並修改上方的「最後更新」日期。重大變更會寫在插件的更新說明中。</p>
+
+  <h2>6. 聯絡方式</h2>
+  <p>對這份政策有任何問題，<span data-repo-hide>請到本專案 GitHub 頁面的 Issues 提出</span><a data-repo="/issues" hidden>請到 GitHub Issues 提出</a>。回報時請不要附上任務標題、人名、公司站台網址或未遮蔽的截圖。</p>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p>Time color for Jira 為獨立開發的工具，與 Atlassian 無關。Jira 是 Atlassian 的商標。</p>
+    <p><a href="./">首頁</a><a data-repo="/issues" hidden>問題回報</a><a data-repo="" hidden>GitHub</a></p>
+  </div>
+</footer>
+</body>
+</html>
