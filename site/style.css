@@ -96,6 +96,7 @@ section{padding-bottom:56px}
 .m-date{padding:1px 6px;border-radius:3px;background:#dcdfe4;color:#172b4d;font-size:12px}
 
 /* Recommended workflow: one scheduling board filtered into role boards */
+video.demo{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:12px;background:#1d2125;box-shadow:0 12px 32px rgba(9,30,66,.18)}
 .section-lead{margin:-8px 0 24px;max-width:760px;font-size:17px;color:var(--muted)}
 .flow{display:grid;grid-template-columns:1.25fr auto 1fr;gap:16px;align-items:center;margin:0 0 16px}
 .flow .mock{padding:12px 14px 14px}
