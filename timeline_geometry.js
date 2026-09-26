@@ -50,8 +50,12 @@
         if (spans.length) {
           hasWeeklyDays = true;
           let year = referenceYear;
+          // Day numbers are text-width spans; the week cell divided evenly gives the real day columns.
+          const week = label.parentElement.getBoundingClientRect();
+          if (!week || week.width <= 0 || week.height <= 0) return null;
+          const dayWidth = week.width / spans.length;
           const previous = days[days.length - 1];
-          const adjacent = previous && Math.abs(previous.right - spans[0].getBoundingClientRect().left) <= 0.05;
+          const adjacent = previous && Math.abs(previous.right - week.left) <= 0.05;
           if (adjacent) year = Number(previous.endExclusive.slice(0, 4));
           else if (!/(?:['’]\d{2}|\d{4})\s*$/.test(text || '')) {
             // A clipped boundary can start with yearless Dec / Jan followed by Jan '27.
@@ -73,7 +77,7 @@
           let monthIndex = 0,
             previousDay = null,
             previousDate = null;
-          for (const span of spans) {
+          for (const [spanIndex, span] of spans.entries()) {
             const value = span.textContent?.trim(),
               day = Number(value);
             if (!/^\d{1,2}$/.test(value || '') || day < 1 || day > 31) return null;
@@ -81,10 +85,10 @@
             if (!months[monthIndex]) return null;
             const start = months[monthIndex] + '-' + String(day).padStart(2, '0');
             if (dates.parseDateLabel(start) !== start || (previousDate && nextDay(previousDate) !== start)) return null;
-            const rect = span.getBoundingClientRect();
-            if (!rect || rect.width <= 0 || rect.height <= 0) return null;
-            if (!days.some((cell) => cell.start === start && Math.abs(cell.left - rect.left) < 0.05))
-              days.push({ start, endExclusive: nextDay(start), left: rect.left, right: rect.right });
+            const left = week.left + spanIndex * dayWidth,
+              right = spanIndex === spans.length - 1 ? week.right : left + dayWidth;
+            if (!days.some((cell) => cell.start === start && Math.abs(cell.left - left) < 0.05))
+              days.push({ start, endExclusive: nextDay(start), left, right });
             previousDay = day;
             previousDate = start;
           }

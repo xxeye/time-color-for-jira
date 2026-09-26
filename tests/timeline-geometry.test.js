@@ -104,3 +104,34 @@ test('unusable weekly days do not fall back to stretching a month across a week'
     null,
   );
 });
+test('narrow day-number spans use evenly divided week columns across a multi-year range', () => {
+  // Jira 2026-09: day numbers are text-width spans inside 255px week columns; only other-year labels carry a year.
+  const weeks = [
+    ["Dec '25", [22, 23, 24, 25, 26, 27, 28]],
+    ['Dec / Jan', [29, 30, 31, 1, 2, 3, 4]],
+    ['Jan', [5, 6, 7, 8, 9, 10, 11]],
+    ['Dec / Jan', [28, 29, 30, 31, 1, 2, 3]],
+    ["Jan '27", [4, 5, 6, 7, 8, 9, 10]],
+  ];
+  const labels = weeks.map(([text, numbers], index) => {
+    const left = index * 255;
+    const bounds = { left, right: left + 255, width: 255, height: 30 };
+    const spans = numbers.map((day, i) => ({
+      textContent: String(day),
+      getBoundingClientRect: () => ({ left: left + 12 + i * 35.28, right: left + 31.3 + i * 35.28, width: 19.3, height: 16 }),
+    }));
+    const parentElement = { getBoundingClientRect: () => bounds, querySelectorAll: () => spans };
+    return { textContent: text, parentElement, getAttribute: () => null, closest: () => null };
+  });
+  // The 2026 weeks between the two boundaries are omitted, so each boundary is read as its own header.
+  const table = (list) => ({ querySelector: () => ({ lastElementChild: { querySelectorAll: () => list } }) });
+  const first = geometry.readScale(table(labels.slice(0, 3)), dates, 'WEEKS', 2026);
+  assert.ok(first);
+  assert.equal(first.start, '2025-12-22');
+  assert.equal(first.endExclusive, '2026-01-12');
+  assert.equal(first.dateToX('2025-12-23'), 255 / 7);
+  assert.equal(first.dateToX('2025-12-29'), 255);
+  const second = geometry.readScale(table(labels.slice(3)), dates, 'WEEKS', 2026);
+  assert.ok(second);
+  assert.equal(second.start, '2026-12-28');
+});

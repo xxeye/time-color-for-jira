@@ -914,13 +914,20 @@
       return { start: local(start), end: local(end) };
     };
     // Saved dates are authoritative while hovering, regardless of zoom or label format.
-    if (!wdDragLocked) return toRange(cached?.startDate, cached?.dueDate);
+    if (!wdDragLocked && cached?.startDate && cached?.dueDate) return toRange(cached.startDate, cached.dueDate);
+    // Rolled-up ranges (e.g. an Epic without its own dates) show both dates in one label: "A - B (75 days)".
     const labels = [...bar.querySelectorAll('small,time')]
       .filter((el) => el.getBoundingClientRect().width > 0)
       .sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)
-      .map((el) => JptDates.parseDateLabel(el.textContent.replace(/\s*\([^)]*\)\s*$/, '').trim()))
+      .flatMap((el) =>
+        el.textContent
+          .replace(/\s*\([^)]*\)\s*$/, '')
+          .split(/\s+[-–]\s+/)
+          .map((part) => JptDates.parseDateLabel(part.trim())),
+      )
       .filter(Boolean);
     if (labels.length >= 2) return toRange(labels[0], labels[labels.length - 1]);
+    if (!wdDragLocked) return null;
     // During a drag, translate the original saved boundaries with a calendar scale.
     // Never derive an absolute duration from the rounded width of a bar.
     if (!dragStart?.rect || !dragStart.startDate || !dragStart.dueDate) return null;
