@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title data-i18n="actionTitle"></title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="master-row">
+    <h1 data-i18n="popupHeading"></h1>
+  </div>
+
+  <section class="connection" data-i18n-attr="aria-label:popupConnectionLabel">
+    <strong id="runtime-title" role="status" data-i18n="statusLoadingSettings"></strong>
+    <p id="runtime-message"></p>
+    <p id="config-source" class="muted" hidden></p>
+    <p id="managed-note" class="note" hidden></p>
+    <details hidden><summary data-i18n="popupDetailsSummary"></summary><ul id="runtime-details"></ul></details>
+    <div class="connection-actions"><button id="manage-settings" data-i18n="manageSettings"></button></div>
+  </section>
+  <!-- ─── Planning Task ─── -->
+  <section class="group">
+    <h2>Planning Task</h2>
+    <div class="row checkbox-row">
+      <label>
+        <input type="checkbox" id="pt-color-enabled">
+        <span data-i18n="colorEnabledLabel"></span>
+      </label>
+    </div>
+    <div class="row">
+      <label for="pt-color" data-i18n="colorLabel"></label>
+      <div class="ctl">
+        <input type="color" id="pt-color">
+        <input type="text" id="pt-color-text" class="hex" data-i18n-attr="aria-label:ptColorCodeLabel" maxlength="7" placeholder="#6a9a23">
+      </div>
+    </div>
+    <div class="row checkbox-row">
+      <label>
+        <input type="checkbox" id="pt-target-end-shade">
+        <span data-i18n="ptTargetEndShadeLabel"></span>
+      </label>
+    </div>
+  </section>
+
+  <!-- ─── Milestone ─── -->
+  <section class="group">
+    <h2>Milestone</h2>
+    <div class="row checkbox-row">
+      <label>
+        <input type="checkbox" id="ms-color-enabled">
+        <span data-i18n="colorEnabledLabel"></span>
+      </label>
+    </div>
+    <div class="row">
+      <label for="ms-color" data-i18n="colorLabel"></label>
+      <div class="ctl">
+        <input type="color" id="ms-color">
+        <input type="text" id="ms-color-text" class="hex" data-i18n-attr="aria-label:msColorCodeLabel" maxlength="7" placeholder="#FF8B00">
+      </div>
+    </div>
+    <div class="row checkbox-row">
+      <label>
+        <input type="checkbox" id="ms-diamond">
+        <span data-i18n="msDiamondLabel"></span>
+      </label>
+    </div>
+    <div class="row checkbox-row">
+      <label>
+        <input type="checkbox" id="ms-show-progress">
+        <span data-i18n="msShowProgressLabel"></span>
+      </label>
+    </div>
+  </section>
+
+  <!-- ─── Epic ─── -->
+  <section class="group">
+    <h2>Epic</h2>
+    <div class="row checkbox-row">
+      <label>
+        <input type="checkbox" id="epic-stripe">
+        <span data-i18n="epicStripeLabel"></span>
+      </label>
+    </div>
+  </section>
+
+  <!-- ─── Timeline view ─── -->
+  <section class="group">
+    <h2 data-i18n="timelineSectionHeading"></h2>
+    <div class="row checkbox-row">
+      <label>
+        <input type="checkbox" id="hide-current-month">
+        <span data-i18n="hideCurrentMonthLabel"></span>
+      </label>
+    </div>
+    <div class="row checkbox-row">
+      <label>
+        <input type="checkbox" id="hide-issue-key">
+        <span data-i18n="hideIssueKeyLabel"></span>
+      </label>
+    </div>
+    <div class="row checkbox-row">
+      <label>
+        <input type="checkbox" id="show-weekends">
+        <span data-i18n="showWeekendsLabel"></span>
+      </label>
+    </div>
+    <div class="row checkbox-row">
+      <label>
+        <input type="checkbox" id="show-holidays">
+        <span data-i18n="showHolidaysLabel"></span>
+      </label>
+    </div>
+    <div class="row checkbox-row">
+      <label>
+        <input type="checkbox" id="show-working-days">
+        <span data-i18n="showWorkingDaysLabel"></span>
+      </label>
+    </div>
+    <p id="calendar-status" role="status"></p>
+    <details class="info">
+      <summary data-i18n="hideCurrentMonthInfoSummary"></summary>
+      <div class="info-body" data-i18n="hideCurrentMonthInfoBody"></div>
+    </details>
+  </section>
+
+  <!-- ─── Actions ─── -->
+  <div class="footer">
+    <button id="reset" class="btn-secondary" data-i18n="resetPreferences"></button>
+    <span class="status" id="status" role="status"></span>
+  </div>
+
+  <p class="hint"><span data-i18n="popupHintApply"></span><br><span data-i18n="popupHintToolbar"></span></p>
+
+  <script src="i18n.js"></script><script src="settings.js"></script><script src="settings_client.js"></script><script src="ui_helpers.js"></script><script src="popup.js"></script>
+</body>
+</html>

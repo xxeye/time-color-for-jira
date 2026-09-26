@@ -1,0 +1,156 @@
+:root{
+  color-scheme:light;
+  --bg:#f7f8f9;--surface:#fff;--text:#172b4d;--muted:#44546f;--line:#dfe1e6;--accent:#0c66e4;--on-accent:#fff;
+  --pt:#6a9a23;--ms:#ff8b00;--epic:#8f7ee7;--weekend:rgba(9,30,66,.05);--holiday:rgba(220,110,50,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    color-scheme:dark;
+    --bg:#161a1d;--surface:#22272b;--text:#c7d1db;--muted:#9fadbc;--line:#2c333a;--accent:#579dff;--on-accent:#1d2125;
+    --weekend:rgba(183,198,218,.05);--holiday:rgba(255,171,102,.11);
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans TC",sans-serif}
+a{color:var(--accent);text-underline-offset:3px}
+img{max-width:100%}
+.wrap{max-width:960px;margin:0 auto;padding-inline:24px}
+
+.top{background:var(--surface);border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:12px 24px;flex-wrap:wrap;min-height:60px;padding-block:8px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--text);text-decoration:none}
+.nav nav{display:flex;gap:4px 20px;flex-wrap:wrap;font-size:15px}
+.nav nav a{color:var(--muted);text-decoration:none}
+.nav nav a:hover,.nav nav a[aria-current=page]{color:var(--text)}
+
+h1{font-size:40px;line-height:1.25;margin:0 0 16px;font-weight:700}
+h2{font-size:26px;line-height:1.35;margin:0 0 20px}
+h3{font-size:18px;margin:0 0 6px}
+section{padding-bottom:56px}
+
+.hero{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;padding-block:64px}
+.nowrap{white-space:nowrap}
+.lead{font-size:18px;color:var(--muted);margin:0 0 24px}
+.cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.badge{display:inline-block;padding:7px 14px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:14px;color:var(--muted)}
+.button{display:inline-block;padding:8px 18px;border-radius:6px;font-weight:600;text-decoration:none;background:var(--accent);color:var(--on-accent)}
+.fine{font-size:14px;color:var(--muted)}
+
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px 22px}
+.card p{margin:0;color:var(--muted)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card ol{margin:0 0 12px;padding-left:22px}
+.card ol li{margin-bottom:4px}
+.plain{margin:0;padding-left:22px}
+
+/* Timeline illustration: same colours and badge styles the extension draws on Jira's dark Timeline.
+   --d is one day; the chart spans Sep–Nov 2026 (91 days, Sep 1 is a Tuesday). */
+.mock{
+  --d:calc(100% / 91);
+  --m-bg:#1d2125;--m-head:#22272b;--m-line:#2c333a;--m-text:#9fadbc;--m-strong:#c7d1db;
+  --m-weekend:rgba(183,198,218,.06);--m-holiday:rgba(255,171,102,.14);
+  margin:0;background:var(--m-bg);border:1px solid var(--m-line);border-radius:12px;overflow:hidden;
+  box-shadow:0 12px 32px rgba(9,30,66,.18);
+}
+.mock-head{display:grid;grid-template-columns:30fr 31fr 30fr;background:var(--m-head);border-bottom:1px solid var(--m-line);font-size:12px;color:var(--m-text)}
+.mock-head span{padding:9px 12px;border-left:1px solid var(--m-line)}
+.mock-head span:first-child{border-left:0}
+.mock-head .now{color:var(--m-strong);font-weight:700}
+.mock-body{
+  position:relative;padding-block:12px;
+  background-image:repeating-linear-gradient(90deg,transparent 0 calc(var(--d) * 4),var(--m-weekend) calc(var(--d) * 4) calc(var(--d) * 6),transparent calc(var(--d) * 6) calc(var(--d) * 7));
+}
+.m-holiday{position:absolute;top:0;bottom:0;width:var(--d);background:var(--m-holiday)}
+.m-today{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:#579dff}
+.m-row{position:relative;height:34px}
+.m-bar{position:absolute;top:8px;height:18px;border-radius:4px;background:#6a9a23}
+.m-bar.epic{background:#8c4fc4}
+.m-diamond{position:absolute;top:10px;width:14px;height:14px;margin-left:-8px;background:#ff8b00;border:1px solid rgba(0,0,0,.4);box-shadow:0 1px 3px rgba(0,0,0,.4);transform:rotate(45deg)}
+.m-badge{position:absolute;top:50%;transform:translateY(-50%);margin-left:12px;padding:2px 6px;border-radius:3px;font:600 11px/1.4 'Roboto Mono',ui-monospace,Consolas,monospace;letter-spacing:.2px;white-space:nowrap}
+.m-badge.mid,.m-badge.wd{background:rgba(87,157,255,.18);color:#87b5ff}
+.m-badge.low{background:rgba(247,201,72,.18);color:#f5cd47}
+.m-badge.wd{margin-left:6px}
+
+/* Linked-task hover panel, matching the extension's Milestone tooltip */
+.showcase{display:grid;grid-template-columns:1fr 1.15fr;gap:48px;align-items:center}
+.showcase p{margin:0;font-size:17px;color:var(--muted)}
+.tipmock{padding:22px 22px 18px;background-image:repeating-linear-gradient(90deg,transparent 0 48px,var(--m-weekend) 48px 66px)}
+.m-tip{background:#282a2e;border:1px solid rgba(255,255,255,.1);border-radius:3px;box-shadow:0 8px 24px rgba(0,0,0,.45);color:#cecfd2;font:12px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif}
+.m-tip-header{padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px;font-weight:600}
+.m-tip-body{padding:6px 12px 8px}
+.m-tip-item{display:flex;align-items:center;padding:3px 0;white-space:nowrap;min-width:0}
+.m-tip-status{flex:none;width:14px;margin-right:6px;text-align:center;color:#96999e}
+.m-tip-item.wip .m-tip-status{color:#579dff}
+.m-tip-item.done .m-tip-status{color:#4bce97}
+.m-type{flex:none;width:14px;height:14px;margin-right:6px;border-radius:3px;background:#4688ec}
+.m-type.story{background:#63ba3c}
+.m-type.bug{border-radius:50%;background:#e5493a}
+.m-tip-item.done .m-type{opacity:.55}
+.m-tip-date{flex:none;margin-right:8px;color:#6cc3e0;font-weight:500;font-variant-numeric:tabular-nums}
+.m-tip-summary{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.m-tip-item.done .m-tip-date,.m-tip-item.done .m-tip-summary{color:#96999e;text-decoration:line-through}
+.m-tip-anchor{display:flex;align-items:center;gap:14px;margin-top:14px;padding-left:38%}
+.m-tip-anchor .m-diamond{position:static;flex:none;margin:0}
+.m-date{padding:1px 6px;border-radius:3px;background:#dcdfe4;color:#172b4d;font-size:12px}
+
+/* Recommended workflow: one scheduling board filtered into role boards */
+.section-lead{margin:-8px 0 24px;max-width:760px;font-size:17px;color:var(--muted)}
+.flow{display:grid;grid-template-columns:1.25fr auto 1fr;gap:16px;align-items:center;margin:0 0 16px}
+.flow .mock{padding:12px 14px 14px}
+.flow-label{margin-bottom:8px;font-size:12px;font-weight:700;color:var(--m-strong)}
+.f-row{display:flex;align-items:center;gap:10px;height:30px}
+.f-tag{flex:none;width:44px;padding:1px 0;border-radius:3px;background:rgba(150,207,117,.18);color:#b7e089;font-size:11px;font-weight:600;text-align:center}
+.f-tag.epic{background:rgba(140,79,196,.3);color:#d6b8f5}
+.f-tag.ms{background:rgba(255,139,0,.2);color:#ffb766}
+.f-track{position:relative;flex:1;height:100%;background-image:repeating-linear-gradient(90deg,transparent 0 30px,var(--m-weekend) 30px 38px)}
+.f-bar{position:absolute;top:7px;height:16px;border-radius:4px;background:#6a9a23}
+.f-bar.epic{background:#8c4fc4}
+.f-track .m-diamond{top:8px}
+.flow-arrow{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;color:var(--muted);white-space:nowrap}
+.flow-arrow::before{content:"→";font-size:28px;line-height:1;color:var(--accent)}
+.flow-boards{display:grid;gap:10px}
+.flow-board .f-row{height:24px}
+.flow-board .f-bar{top:4px}
+.f-tasks{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;padding-left:54px;font-size:12px;color:#cecfd2}
+.f-tasks span{display:inline-flex;align-items:center}
+.audience-examples{margin:14px 0 0}
+.helps{margin-top:16px}
+.helps .fine{margin-top:10px}
+.card ul.list{margin:0;padding-left:20px;color:var(--muted)}
+.card ul.list li{margin-bottom:4px}
+code{padding:1px 6px;border:1px solid var(--line);border-radius:4px;background:var(--bg);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.9em;overflow-wrap:anywhere}
+
+/* Privacy policy */
+.doc{max-width:760px;padding-block:48px}
+.doc h1{font-size:32px}
+.doc h2{font-size:22px;margin:40px 0 12px}
+.doc h3{margin-top:24px}
+.doc p,.doc li{color:var(--text)}
+.doc .meta{color:var(--muted);font-size:15px}
+.summary{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 22px}
+.table{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{border:1px solid var(--line);padding:8px 12px;text-align:left;vertical-align:top}
+th{background:var(--surface)}
+.english{margin-top:48px;padding-top:24px;border-top:1px solid var(--line)}
+
+.foot{border-top:1px solid var(--line);padding-block:24px;font-size:14px;color:var(--muted)}
+.foot p{display:flex;gap:6px 18px;flex-wrap:wrap;margin:4px 0}
+
+@media (max-width:760px){
+  .hero,.two,.showcase{grid-template-columns:1fr}
+  .showcase{gap:24px}
+  .flow{grid-template-columns:1fr}
+  .flow-arrow{flex-direction:row}
+  .flow-arrow::before{content:"↓";font-size:22px}
+  .hero{padding-block:40px;gap:32px}
+  .grid{grid-template-columns:1fr 1fr}
+  h1{font-size:32px}
+}
+@media (max-width:480px){
+  .wrap{padding-inline:16px}
+  .grid{grid-template-columns:1fr}
+  h1{font-size:28px}
+}

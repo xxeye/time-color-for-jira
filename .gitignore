@@ -1,0 +1,22 @@
+# 個人筆記、規劃文件
+docs/
+.obsidian/
+
+# 封存（不再使用的舊檔）
+_archive/
+
+# 建置輸出（python pack.py 產生）
+dist/
+
+# 本機工具設定
+.claude/
+
+# Python / Node
+__pycache__/
+*.pyc
+node_modules/
+
+# 系統檔
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,32 @@
+/* options.css — Atlassian 深色補充規則（搭配 onboarding.css）
+   保留原有全部 class / id。 */
+
+.button{display:inline-block;text-decoration:none;padding:9px 16px;border-radius:3px;font-size:14px;font-weight:500;margin:4px 8px 4px 0}
+.site-row:first-child{border-top:none}
+.site-row strong{display:block;color:var(--text)}
+.site-row button{font-size:13px}
+.site-row details{font-size:13px}
+.site-row dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:8px 0}
+.site-row dt{color:var(--muted)}
+.site-row dd{margin:0;color:var(--muted);overflow-wrap:anywhere}
+.scope-row{padding:12px 0;border-bottom:1px solid var(--line)}
+.scope-row:last-child{border-bottom:0}
+.scope-row p{margin:4px 0 8px}
+.scope-origin,.site-row h3{overflow-wrap:anywhere}
+.scope-origin{font-size:13px;color:var(--muted)}
+#preview{margin-top:24px;padding-top:16px;border-top:1px solid var(--line)}
+#preview-list{margin:12px 0}
+.management-tools{margin:18px 0;border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--surface);padding:16px 20px}
+.management-tools>summary{font-weight:600;cursor:pointer}
+.tools-body{padding-top:12px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+
+/* 頁籤：匯入與管理／產生設定檔（管理員），兩個頁籤同寬；預留捲軸寬度，切換時不左右跳動。 */
+html{scrollbar-gutter:stable}
+.page-tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line);margin-top:16px}
+.page-tabs [role=tab]{margin:0 0 -1px;border:0;border-bottom:2px solid transparent;border-radius:var(--radius) var(--radius) 0 0;color:var(--muted)}
+.page-tabs [role=tab]:hover{background:var(--surface);color:var(--text)}
+.page-tabs [role=tab][aria-selected=true]{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.lead{margin-top:0}
+.generator-frame{display:block;width:100%;height:80vh;border:0;background:transparent}
+.sources ul{margin:8px 0;padding-left:20px}.sources li{margin:4px 0}

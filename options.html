@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title data-i18n="optionsTitle"></title><link rel="stylesheet" href="onboarding.css"><link rel="stylesheet" href="options.css"></head>
+<body><main id="page">
+<header><h1 data-i18n="manageSettings"></h1>
+<div class="page-tabs" role="tablist" data-i18n-attr="aria-label:optionsTabsLabel"><button id="tab-settings" type="button" role="tab" aria-controls="panel-settings" aria-selected="true" data-i18n="tabImport"></button><button id="tab-generator" type="button" role="tab" aria-controls="panel-generator" aria-selected="false" tabindex="-1" data-i18n="tabGenerator"></button></div>
+</header>
+<div id="panel-settings" role="tabpanel" aria-labelledby="tab-settings">
+<p class="lead" data-i18n="optionsLead"></p>
+<p id="notice" role="status" tabindex="-1"></p>
+<section class="sources" aria-labelledby="sources-heading"><h2 id="sources-heading" data-i18n="optionsSourcesHeading"></h2><ul><li data-i18n="optionsSourceProject"></li><li data-i18n="optionsSourceFile"></li></ul><p data-i18n="optionsSourceRule"></p></section>
+<section aria-labelledby="import-heading"><h2 id="import-heading" data-i18n="importHeading"></h2>
+<div id="drop-zone" class="drop-zone"><label for="config-file" data-i18n="chooseConfigLabel"></label><input id="config-file" type="file" accept=".json,application/json"><p class="muted" data-i18n="dropHint"></p></div>
+<div id="preview" hidden><h3 id="preview-heading" tabindex="-1" data-i18n="previewHeading"></h3><div id="preview-list"></div><p class="muted" data-i18n="previewHint"></p><div class="actions"><button id="apply" class="primary" data-i18n="saveConfig"></button><button id="discard" data-i18n="cancelImport"></button></div></div>
+</section>
+<section aria-labelledby="saved-heading"><h2 id="saved-heading" tabindex="-1" data-i18n="savedHeading"></h2><div id="sites" aria-live="polite" data-i18n="loadingSettingsEllipsis"></div></section>
+
+<details class="management-tools"><summary data-i18n="toolsSummary"></summary><div class="tools-body"><button id="export" data-i18n="exportConfig"></button><button id="restore" data-i18n="restoreConfig"></button><button id="reset" data-i18n="resetAppearance"></button><button id="refresh" data-i18n="refreshJira"></button><p class="muted" data-i18n="toolsHint"></p></div></details>
+<details class="management-tools"><summary data-i18n="privacySummary"></summary><div class="tools-body"><p data-i18n="privacySignIn"></p><p data-i18n="privacyData"></p><p data-i18n="privacyHolidays"></p><p data-i18n="privacyGenerator"></p></div></details>
+</div>
+<div id="panel-generator" role="tabpanel" aria-labelledby="tab-generator" hidden>
+<p class="lead" data-i18n="generatorLead"></p>
+<iframe id="generator-frame" class="generator-frame" data-i18n-attr="title:generatorFrameTitle" data-src="generator.html"></iframe>
+</div>
+</main><script src="i18n.js"></script><script src="settings.js"></script><script src="settings_client.js"></script><script src="ui_helpers.js"></script><script src="calendar.js"></script><script src="options_tabs.js"></script><script src="options.js"></script></body></html>

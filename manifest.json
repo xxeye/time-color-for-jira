@@ -1,0 +1,60 @@
+{
+  "manifest_version": 3,
+  "name": "Time color for Jira",
+  "version": "1.0.0",
+  "default_locale": "en",
+  "description": "__MSG_extDescription__",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://*.atlassian.net/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "__MSG_actionTitle__",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.atlassian.net/*"
+      ],
+      "js": [
+        "i18n.js",
+        "settings.js",
+        "settings_client.js",
+        "jiraApi.js",
+        "issue_rules.js",
+        "issue_cache.js",
+        "calendar.js",
+        "timeline_dates.js",
+        "timeline_geometry.js",
+        "runtime_session.js",
+        "timeline_adapter.js",
+        "floating_toolbar.js",
+        "timeline_color.js"
+      ],
+      "css": [
+        "timeline_color.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

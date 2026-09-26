@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self'; base-uri 'none'; form-action 'none'">
+  <title data-i18n="genTitle"></title>
+  <link rel="stylesheet" href="generator.css">
+  <script src="i18n.js" defer></script>
+  <script src="architecture_template.js" defer></script>
+  <script src="settings.js" defer></script>
+  <script src="generator.js" defer></script>
+</head>
+<body>
+<main>
+  <header><h1 data-i18n="genTitle"></h1>
+    <p data-i18n="genIntro"></p>
+    <p class="note" data-i18n="genNote"></p>
+  </header>
+  <noscript>JavaScript is required to use this form.</noscript>
+  <section class="import-card"><h2 data-i18n="genEditHeading"></h2>
+    <label class="import" for="importFile"><span data-i18n="genEditLabel"></span><input id="importFile" type="file" accept=".json,application/json"></label>
+  </section>
+  <form id="generatorForm" novalidate>
+    <fieldset><legend data-i18n="genSiteLegend"></legend><div class="grid">
+      <label class="wide" for="origin"><span data-i18n="genSiteUrl"></span><input data-field id="origin" type="url" placeholder="https://your-site.atlassian.net" autocomplete="off" aria-describedby="originHelp"><small id="originHelp" data-i18n="genSiteUrlHelp"></small></label>
+      <label for="revision"><span data-i18n="genRevision"></span><input data-field id="revision" type="number" min="1" step="1" value="1"><small data-i18n="genRevisionHelp"></small></label>
+      <label for="projectId"><span data-i18n="genProjectId"></span><input data-field id="projectId" inputmode="numeric" autocomplete="off"><small data-i18n="genProjectIdHelp"></small></label>
+      <label class="wide" for="timelinePath"><span data-i18n="genTimelinePath"></span><input data-field id="timelinePath" autocomplete="off" placeholder="/jira/software/c/projects/DEMO/boards/1/timeline"><small data-i18n="genTimelinePathHelp"></small></label>
+    </div><details><summary data-i18n="genProjectIdHowSummary"></summary><p data-i18n="genProjectIdHowBody"></p></details></fieldset>
+    <fieldset><legend data-i18n="genTypesLegend"></legend><p data-i18n="genTypesIntro"></p><div class="grid">
+      <label for="planning"><span data-i18n="genPlanningId"></span><input data-field id="planning" inputmode="numeric" autocomplete="off"><small data-i18n="genPlanningHelp"></small></label>
+      <label for="milestone"><span data-i18n="genMilestoneId"></span><input data-field id="milestone" inputmode="numeric" autocomplete="off"><small data-i18n="genMilestoneHelp"></small></label>
+      <label for="epic"><span data-i18n="genEpicId"></span><input data-field id="epic" inputmode="numeric" autocomplete="off"><small data-i18n="genEpicHelp"></small></label>
+    </div><details><summary data-i18n="genTypesHowSummary"></summary><p data-i18n="genTypesHowBody1"></p><p data-i18n="genTypesHowBody2"></p></details></fieldset>
+    <fieldset><legend data-i18n="genFieldsLegend"></legend><p data-i18n="genFieldsIntro"></p><div class="grid">
+      <label for="role"><span data-i18n="genRoleField"></span><input data-field id="role" autocomplete="off"><small data-i18n="genRoleHelp"></small></label>
+      <label for="startDate"><span data-i18n="genStartDateField"></span><input data-field id="startDate" autocomplete="off"><small data-i18n="genStartDateHelp"></small></label>
+      <label for="targetEnd"><span data-i18n="genTargetEndField"></span><input data-field id="targetEnd" autocomplete="off"><small data-i18n="genTargetEndHelp"></small></label>
+      <input data-field id="epicHighlight" type="hidden"><input data-field id="highlightOperator" type="hidden" value="equals"><input data-field id="highlightValue" type="hidden">
+    </div><details><summary data-i18n="genFieldsHowSummary"></summary><p data-i18n="genFieldsHowBody1"></p><p data-i18n="genFieldsHowBody2"></p></details></fieldset>
+    <fieldset><legend data-i18n="genDefaultsLegend"></legend><p data-i18n="genDefaultsIntro"></p><div id="settings" class="settings"></div>
+      <h2 data-i18n="genProgressHeading"></h2><div class="grid">
+        <label class="check wide" for="progressEnabled"><input data-field id="progressEnabled" type="checkbox" checked><span data-i18n="genProgressEnabled"></span></label>
+        <label for="linkTypeIds"><span data-i18n="genLinkTypeIds"></span><input data-field id="linkTypeIds" autocomplete="off"><small data-i18n="genLinkTypeHelp"></small></label>
+        <label for="direction"><span data-i18n="genDirection"></span><select data-field id="direction"><option value="both" data-i18n="genDirBoth"></option><option value="inward" data-i18n="genDirInward"></option><option value="outward" data-i18n="genDirOutward"></option></select></label>
+        <label for="inProgressWeight"><span data-i18n="genWeight"></span><input data-field id="inProgressWeight" type="number" min="0" max="1" step="0.1" value="0.5"><small data-i18n="genWeightHelp"></small></label>
+        <label for="weekendDays"><span data-i18n="genWeekendDays"></span><input data-field id="weekendDays" value="0,6"><small data-i18n="genWeekendHelp"></small></label>
+        <label class="wide" for="holidays"><span data-i18n="genHolidays"></span><textarea data-field id="holidays" rows="6" placeholder="2027-01-01 New Year's Day" aria-describedby="holidaysHelp"></textarea><small id="holidaysHelp" data-i18n="genHolidaysHelp"></small></label>
+        <label class="wide" for="workdays"><span data-i18n="genWorkdays"></span><textarea data-field id="workdays" rows="3" placeholder="2027-02-20" aria-describedby="workdaysHelp"></textarea><small id="workdaysHelp" data-i18n="genWorkdaysHelp"></small></label>
+      </div>
+    </fieldset>
+    <aside data-i18n-attr="aria-label:genLookupLabel"><h2 data-i18n="genLookupHeading"></h2><p data-i18n="genLookupHint"></p><nav id="metadata" data-i18n-attr="aria-label:genLookupLabel"></nav></aside>
+    <footer><h2 data-i18n="genDownloadHeading"></h2><p id="summary" role="status" tabindex="-1"></p><p id="errors" role="alert"></p><button type="submit" data-i18n="genDownloadButton"></button><p><span data-i18n="genAfterDownload"></span><br><span data-i18n="genPrivacyReminder"></span></p></footer>
+  </form>
+</main>
+</body>
+</html>

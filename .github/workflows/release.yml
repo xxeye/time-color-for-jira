@@ -1,0 +1,65 @@
+name: 發布版本
+
+# 推送 v 開頭的標籤（例如 v1.0.0）時：測試、打包，並建立 GitHub Release
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 確認標籤與 manifest 版本一致
+        run: |
+          version=$(python -c "import json; print(json.load(open('manifest.json', encoding='utf-8'))['version'])")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::標籤 $GITHUB_REF_NAME 與 manifest.json 的版本 $version 不一致"
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: 測試
+        run: |
+          node --test --test-isolation=none tests/*.test.js
+          python -m unittest discover -s tests -p "test_*.py"
+
+      - name: 打包
+        run: |
+          python pack.py
+          asset="time-color-for-jira-v${VERSION}.zip"
+          mv dist/pt-timeline-color.zip "dist/$asset"
+          (cd dist && sha256sum "$asset" > "$asset.sha256")
+          echo "ASSET=$asset" >> "$GITHUB_ENV"
+
+      - name: 建立 GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > release-notes.md <<EOF
+          ## 手動安裝（未封裝）
+
+          1. 下載下方的 \`${ASSET}\`，解壓縮成資料夾
+          2. 打開 \`chrome://extensions\`，開啟右上角的「開發人員模式」
+          3. 按「載入未封裝項目」，選擇解壓後的資料夾
+
+          手動安裝的版本不會自動更新，有新版時請重新下載，並在擴充功能頁按「重新載入」。
+          \`${ASSET}.sha256\` 可以用來確認下載的檔案是否完整。
+
+          EOF
+          gh release create "$GITHUB_REF_NAME" "dist/$ASSET" "dist/$ASSET.sha256" \
+            --title "Time color for Jira v${VERSION}" \
+            --notes-file release-notes.md \
+            --generate-notes
