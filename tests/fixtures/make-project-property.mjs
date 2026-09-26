@@ -115,6 +115,8 @@ const cases = [
   // doesn't know (and reports them) instead of rejecting the whole property; the admin tool writes
   // only known keys. Breaking changes raise schemaVersion (still rejected above).
   make('forward: extra key in fields', (v) => { v.profile.fields.other = null; }, true, false),
+  make('forward: extra field with a non-customfield value', (v) => { v.profile.fields.future = 'duedate'; }, true, false),
+  make('forward: extra fields with a number, object and array', (v) => { Object.assign(v.profile.fields, { n: 7, o: { a: 1 }, l: ['x'] }); }, true, false),
   make('forward: extra key in a holiday entry', (v) => { v.profile.calendar.holidays[0].type = 'x'; }, true, false),
   make('forward: unknown display setting', (v) => { v.profile.settings.sparkles = true; }, true, false),
   make('forward: unknown top-level key', (v) => { v.sites = {}; }, true, false),

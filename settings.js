@@ -184,10 +184,14 @@
         }
         if (new Set(all).size !== all.length) err(path + '.issueTypes', 'vDuplicateTypes');
       }
-      if (shape(p.fields, ['role', 'epicHighlight', 'startDate', 'targetEnd'], path + '.fields'))
-        for (const [k, v] of Object.entries(p.fields))
+      const fieldKeys = ['role', 'epicHighlight', 'startDate', 'targetEnd'];
+      // Only known keys are checked; unknown ones were dropped by shape() (GPT review of 938c35b).
+      if (shape(p.fields, fieldKeys, path + '.fields'))
+        for (const k of fieldKeys) {
+          const v = p.fields[k];
           if (v !== null && !(typeof v === 'string' && /^customfield_[1-9]\d{0,19}$/.test(v)))
             err(path + '.fields.' + k, 'vFieldId');
+        }
       if (shape(p.highlightRule, ['operator', 'value'], path + '.highlightRule')) {
         if (p.highlightRule.operator !== 'equals') err(path + '.highlightRule.operator', 'vOperator');
         if (

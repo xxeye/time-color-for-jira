@@ -41,10 +41,12 @@ test('forward compatibility: unknown keys are dropped and reported, known keys s
   p.future = { deep: [1, { x: true }] };
   p.settings.sparkles = true;
   p.progress.mode = 'x';
+  p.fields.future = 'duedate';
   const r = S.validateConfig(c);
   assert.equal(r.ok, true, JSON.stringify(r.errors));
   assert.deepEqual(r.ignored.sort(), [
     '$.issueData',
+    'sites.https://alpha.atlassian.net.defaults.fields.future',
     'sites.https://alpha.atlassian.net.defaults.future',
     'sites.https://alpha.atlassian.net.defaults.progress.mode',
     'sites.https://alpha.atlassian.net.defaults.settings.sparkles',
@@ -54,6 +56,7 @@ test('forward compatibility: unknown keys are dropped and reported, known keys s
   assert.equal('future' in kept, false);
   assert.equal('sparkles' in kept.settings, false);
   assert.equal('mode' in kept.progress, false);
+  assert.equal('future' in kept.fields, false);
   assert.equal(c.issueData.length, 0, 'the input is not modified');
   assert.equal(S.validateConfig(config()).ignored.length, 0);
   p.settings.ptColor = 'red';
