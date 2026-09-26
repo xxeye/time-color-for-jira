@@ -26,6 +26,8 @@
 
 即將上架 Chrome 線上應用程式商店。也可以手動安裝：
 
+若尚無 Release，可下載或 clone 此 repo，執行 `python pack.py`，在步驟 3 選擇產生的 `dist/pt-timeline-color/` 資料夾。
+
 1. 到 [Releases](../../releases/latest) 下載最新版的 `time-color-for-jira-v*.zip`，解壓縮成資料夾
 2. 打開 `chrome://extensions`，開啟右上角的「開發人員模式」
 3. 按「載入未封裝項目」，選擇解壓後的資料夾

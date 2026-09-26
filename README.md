@@ -28,6 +28,8 @@ Website: <https://xxeye.github.io/time-color-for-jira/>
 
 Coming soon to the Chrome Web Store. You can also install it manually:
 
+If no release is available yet, download or clone this repository, run `python pack.py`, and use the generated `dist/pt-timeline-color/` folder in step 3.
+
 1. Download the latest `time-color-for-jira-v*.zip` from [Releases](../../releases/latest) and unzip it into a folder
 2. Open `chrome://extensions` and turn on **Developer mode** (top right)
 3. Click **Load unpacked** and choose the unzipped folder
