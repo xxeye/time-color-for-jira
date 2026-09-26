@@ -61,6 +61,16 @@ test('forward compatibility: unknown keys are dropped and reported, known keys s
   assert.equal(S.validateConfig(config()).ignored.length, 0);
   p.settings.ptColor = 'red';
   assert.equal(S.validateConfig(c).ok, false, 'a known key with a wrong type still fails');
+  for (const value of ['future-mode', { a: 1 }, true]) {
+    const a = config();
+    a.appearance = { ptColor: '#112233', enabled: value, future: [1] };
+    const ra = S.validateConfig(a);
+    assert.equal(ra.ok, true, 'appearance ignores unknown keys: ' + JSON.stringify(ra.errors));
+    assert.deepEqual(ra.value.appearance, { ptColor: '#112233' });
+  }
+  const bad = config();
+  bad.appearance = { ptColor: 'red' };
+  assert.equal(S.validateConfig(bad).ok, false, 'a known appearance color with a wrong value still fails');
   const q = config();
   q.sites['https://alpha.atlassian.net'].defaults.future = JSON.parse('{"__proto__": 1}');
   assert.equal(S.validateConfig(q).ok, false, 'unsafe keys fail even inside unknown sections');

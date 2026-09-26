@@ -280,7 +280,9 @@
         err('template', 'vTemplate');
       if (
         Object.hasOwn(raw, 'appearance') &&
-        (!shape(raw.appearance, ['ptColor', 'msColor'], 'appearance', []) || !preferences(raw.appearance, 'appearance'))
+        // Only the two color keys are checked; others were dropped by shape() (GPT re-review of 89715cf).
+        (!shape(raw.appearance, ['ptColor', 'msColor'], 'appearance', []) ||
+          !['ptColor', 'msColor'].every((k) => !Object.hasOwn(raw.appearance, k) || validPreference(k, raw.appearance[k])))
       )
         err('appearance', 'vAppearance');
       if (!object(raw.sites)) err('sites', 'vSitesObject');
