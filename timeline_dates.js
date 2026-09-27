@@ -51,6 +51,22 @@
     return month === null ? null : isoDate(+match[3], month, +match[2]);
   }
 
+  // Bar labels arrive left to right and may roll up both dates in a single element
+  // ("A - B (75 天)"). Only separators surrounded by whitespace split, so ISO dates
+  // such as 2026-09-28 stay intact. Unparsable parts are dropped, never guessed.
+  function parseLabelDates(texts) {
+    if (!Array.isArray(texts)) return [];
+    const dates = [];
+    for (const text of texts) {
+      const label = typeof text === 'string' ? text : '';
+      for (const part of label.replace(/\s*\([^)]*\)\s*$/, '').split(/\s+[-–]\s+/)) {
+        const iso = parseDateLabel(part.trim());
+        if (iso !== null) dates.push(iso);
+      }
+    }
+    return dates;
+  }
+
   function period(year, month, length) {
     const start = isoDate(year, month, 1);
     const endMonth = month + length;
@@ -163,7 +179,7 @@
   // Jira appends a duration to bar date labels, e.g. "(8 天)" or "(8 days)".
   const DURATION_LABEL = /\(\s*[+-]?\d+\s*(?:天|days?)\s*\)/i;
 
-  const api = { parseDateLabel, parsePeriodLabel, createScale, modeFromLabel, DURATION_LABEL };
+  const api = { parseDateLabel, parseLabelDates, parsePeriodLabel, createScale, modeFromLabel, DURATION_LABEL };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.JptDates = api;
 })(globalThis);

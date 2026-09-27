@@ -12,6 +12,31 @@ test('date labels validate real UTC calendar dates across supported languages', 
   }
 });
 
+test('label dates flatten rolled-up and separate bar labels in order', () => {
+  assert.deepEqual(D.parseLabelDates(['Sep 28, 2026 - Dec 11, 2026  (75 天)']), ['2026-09-28', '2026-12-11']);
+  const chinese = D.parseLabelDates(['2026年9月28日 – 2026年12月11日 (75 天)']);
+  assert.deepEqual(chinese, ['2026-09-28', '2026-12-11']);
+  assert.deepEqual(D.parseLabelDates(['Nov 16, 2026', 'Jan 15, 2027 (61 days)']), ['2026-11-16', '2027-01-15']);
+  assert.deepEqual(D.parseLabelDates(['2026-09-28 - 2026-12-11']), ['2026-09-28', '2026-12-11']);
+  assert.deepEqual(D.parseLabelDates(['2026-09-28']), ['2026-09-28']);
+});
+
+test('label dates drop the duration suffix, unsupported separators and unknown formats', () => {
+  assert.deepEqual(D.parseLabelDates(['Jun 22, 2026 (+17 天)']), ['2026-06-22']);
+  assert.deepEqual(D.parseLabelDates(['Sep 28, 2026 - Dec 11, 2026 (+17 天)']), ['2026-09-28', '2026-12-11']);
+  for (const labels of [['28/09/2026'], ['2026-09-28 — 2026-12-11'], [''], []]) {
+    assert.deepEqual(D.parseLabelDates(labels), []);
+  }
+  assert.deepEqual(D.parseLabelDates(['Sep 28, 2026 - 2026-13-45']), ['2026-09-28']);
+  assert.deepEqual(D.parseLabelDates(null), []);
+  assert.deepEqual(D.parseLabelDates('Sep 28, 2026'), []);
+});
+
+test('label dates keep the given order without validating range or duplicates', () => {
+  assert.deepEqual(D.parseLabelDates(['Dec 11, 2026 - Sep 28, 2026']), ['2026-12-11', '2026-09-28']);
+  assert.deepEqual(D.parseLabelDates(['Sep 28, 2026', 'Sep 28, 2026']), ['2026-09-28', '2026-09-28']);
+});
+
 test('month labels use explicit year or a required reference without current-time guesses', () => {
   for (const label of [
     'September 2026',
