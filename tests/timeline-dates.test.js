@@ -32,6 +32,16 @@ test('label dates drop the duration suffix, unsupported separators and unknown f
   assert.deepEqual(D.parseLabelDates('Sep 28, 2026'), []);
 });
 
+test('label dates handle negative deltas, one-sided separators, partial ranges and non-strings', () => {
+  assert.deepEqual(D.parseLabelDates(['Jun 22, 2026 (-3 天)']), ['2026-06-22']);
+  // A dash needs whitespace on both sides to split; otherwise the whole label fails to parse.
+  assert.deepEqual(D.parseLabelDates(['Sep 28, 2026- Dec 11, 2026']), []);
+  assert.deepEqual(D.parseLabelDates(['Sep 28, 2026 -Dec 11, 2026']), []);
+  // An unparsable left side is dropped while the valid right side is kept.
+  assert.deepEqual(D.parseLabelDates(['Sep 28 2026 - Dec 11, 2026']), ['2026-12-11']);
+  assert.deepEqual(D.parseLabelDates(['Sep 28, 2026', 42, null, 'Dec 11, 2026']), ['2026-09-28', '2026-12-11']);
+});
+
 test('label dates keep the given order without validating range or duplicates', () => {
   assert.deepEqual(D.parseLabelDates(['Dec 11, 2026 - Sep 28, 2026']), ['2026-12-11', '2026-09-28']);
   assert.deepEqual(D.parseLabelDates(['Sep 28, 2026', 'Sep 28, 2026']), ['2026-09-28', '2026-09-28']);
