@@ -14,6 +14,7 @@ Website: <https://xxeye.github.io/time-color-for-jira/>
 - **Weekends and holidays**: holidays and make-up workdays listed by your admin (in a configuration file or the Jira project settings); no external calendar is contacted
 - **Working days**: hover over or drag a bar to see its working days, with weekends and holidays excluded
 - **Milestone progress**: linked issues, progress and due date
+- **Drag locks (optional)**: stop Planning Task or Epic bars from being dragged or resized by accident; open the issue from its name in the left column
 - **Project settings**: an admin saves the settings in a Jira project property (format: [PROJECT_PROFILE.md](PROJECT_PROFILE.md)), and they apply as soon as teammates open the Timeline
 - **Configuration generator for admins**: fill in a form on the settings page instead of writing JSON
 

@@ -69,7 +69,8 @@
   const EPIC_HIGHLIGHT_CLASS = 'jpt-epic-highlight';
   const PROGRESS_CLASS = 'jpt-ms-progress';
   const PT_TARGET_SHADE_CLASS = 'jpt-pt-target-end-shade';
-  const ALL_CLASSES = [PT_CLASS, MS_CLASS, DIA_CLASS, EPIC_HIGHLIGHT_CLASS, PT_TARGET_SHADE_CLASS];
+  const EPIC_BAR_CLASS = 'jpt-epic-bar'; // 標記所有 Epic（不分有無 highlight），給鎖定拖曳用
+  const ALL_CLASSES = [PT_CLASS, MS_CLASS, DIA_CLASS, EPIC_HIGHLIGHT_CLASS, EPIC_BAR_CLASS, PT_TARGET_SHADE_CLASS];
 
   const TYPE_TO_CLASS = { planning: PT_CLASS, milestone: MS_CLASS };
   const EPIC_TYPE_NAMES = new Set(['epic']);
@@ -124,6 +125,9 @@
     document.body?.classList.toggle('jpt-hide-issue-key', !!settings.hideIssueKey && isActive());
     // Milestone 鎖定前後拉長 — 固化為預設行為，但只在啟用時生效
     document.body?.classList.toggle('jpt-ms-lock-edges', isActive());
+    // Planning Task／Epic 鎖定拖曳與拉長（防誤動）
+    document.body?.classList.toggle('jpt-pt-lock-drag', !!settings.ptLockDrag && isActive());
+    document.body?.classList.toggle('jpt-epic-lock-drag', !!settings.epicLockDrag && isActive());
     // 「目前時段」高亮：不是靜態 CSS 規則了，設定一變就重新找一次目標欄位
     try {
       applyCurrentPeriodHide();
@@ -485,12 +489,14 @@
     const wantPT = cls === PT_CLASS;
     const wantMS = isMs;
     const wantDIA = isMs && !!settings.msDiamond;
+    const wantEpicBar = !!isEpic;
     const wantEpic = isEpic && !!settings.epicStripe && !!data.epicHighlight;
 
     const cl = bar.classList;
     if (cl.contains(PT_CLASS) !== wantPT) cl.toggle(PT_CLASS, wantPT);
     if (cl.contains(MS_CLASS) !== wantMS) cl.toggle(MS_CLASS, wantMS);
     if (cl.contains(DIA_CLASS) !== wantDIA) cl.toggle(DIA_CLASS, wantDIA);
+    if (cl.contains(EPIC_BAR_CLASS) !== wantEpicBar) cl.toggle(EPIC_BAR_CLASS, wantEpicBar);
     if (cl.contains(EPIC_HIGHLIGHT_CLASS) !== wantEpic) cl.toggle(EPIC_HIGHLIGHT_CLASS, wantEpic);
 
     // Milestone 才顯示 badge；其他類型清掉（renderProgressBadge 自身冪等）
@@ -1074,6 +1080,18 @@
         dragStart = null;
         return;
       }
+      // 鎖定 PT / Epic 拖曳：在 capture phase 攔下 mousedown，Jira 的 drag listener 收不到。
+      // 副作用：點 bar 開側欄也會失效（Jira 用 mousedown 啟動 click 流程），改從左欄任務名開啟。
+      if (
+        isActive() &&
+        ((settings.ptLockDrag && bar.classList.contains(PT_CLASS)) ||
+          (settings.epicLockDrag && bar.classList.contains(EPIC_BAR_CLASS)))
+      ) {
+        e.stopPropagation();
+        e.preventDefault();
+        dragStart = null;
+        return;
+      }
       const id = extractIssueIdFromBar(bar);
       if (!id) return;
       const key = idToKey.get(id),
@@ -1224,7 +1242,14 @@
     active = false;
     generation++;
     requests.abort();
-    document.body?.classList.remove('jpt-active', 'jpt-ms-lock-edges', 'jpt-pt-native', 'jpt-ms-native');
+    document.body?.classList.remove(
+      'jpt-active',
+      'jpt-ms-lock-edges',
+      'jpt-pt-native',
+      'jpt-ms-native',
+      'jpt-pt-lock-drag',
+      'jpt-epic-lock-drag',
+    );
     if (!keepAppearance) document.body?.classList.remove('jpt-hide-current-month', 'jpt-hide-issue-key');
     domObserver?.disconnect();
     domObserver = null;
@@ -1360,6 +1385,8 @@
           'ptColorEnabled',
           'msColorEnabled',
           'msDiamond',
+          'ptLockDrag',
+          'epicLockDrag',
           'hideCurrentMonth',
           'hideIssueKey',
           'showWeekends',

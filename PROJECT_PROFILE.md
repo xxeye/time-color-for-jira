@@ -96,11 +96,10 @@ The public configuration generator doesn't offer the Epic dashed stripe settings
 | `msDiamond` | boolean | `true` | Show Milestones as diamonds |
 | `msShowProgress` | boolean | `true` | Milestone progress badge |
 | `ptTargetEndShade` | boolean | `false` | Shade Planning Tasks after the target end date (needs the `startDate` and `targetEnd` fields) |
+| `ptLockDrag`, `epicLockDrag` | boolean | `false` | Lock dragging and resizing of Planning Task / Epic bars on the Timeline (the issue opens from its name in the left column). Extension 1.0.0 ignores these keys; later versions apply them |
 | `epicStripe` | boolean | `false` | Dashed stripe on Epics matching `highlightRule` (needs the `epicHighlight` field) |
 | `hideCurrentMonth`, `hideIssueKey` | boolean | `true`, `false` | Hide the current period highlight; hide issue keys |
 | `showWeekends`, `showHolidays`, `showWorkingDays` | boolean | `true` | Weekend and holiday shading, and working days |
-
-The removed keys `ptLockDrag` and `epicLockDrag` (drag locks) are ignored.
 
 ## Turning off project settings
 

@@ -13,16 +13,16 @@
     msColor: '#FF8B00',
     msDiamond: true,
     msShowProgress: true,
+    ptLockDrag: false,
     ptTargetEndShade: false,
     epicStripe: false,
+    epicLockDrag: false,
     hideCurrentMonth: true,
     hideIssueKey: false,
     showWeekends: true,
     showHolidays: true,
     showWorkingDays: true,
   });
-  // Removed preferences (drag locks) are still accepted from older files and storage, then ignored.
-  const RETIRED = ['ptLockDrag', 'epicLockDrag'];
   const PROPERTY_KEY = 'time-color-for-jira',
     FILE_PROFILE_BYTES = 7000,
     PROPERTY_PROFILE_BYTES = 16000,
@@ -70,7 +70,6 @@
     return { schemaVersion: 1, template: { id: 'planning-timeline', version: 1 }, sites: {} };
   }
   function validPreference(k, v) {
-    if (RETIRED.includes(k)) return typeof v === 'boolean';
     return (
       Object.hasOwn(DEFAULTS, k) &&
       (typeof DEFAULTS[k] === 'boolean' ? typeof v === 'boolean' : typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v))
@@ -144,7 +143,7 @@
       let ok = true;
       for (const [k, v] of Object.entries(x))
         if (validPreference(k, v)) continue;
-        else if (Object.hasOwn(DEFAULTS, k) || RETIRED.includes(k)) ok = false;
+        else if (Object.hasOwn(DEFAULTS, k)) ok = false;
         else ignore(x, k, path + '.' + k);
       return ok;
     }
@@ -332,7 +331,6 @@
   function normalize(p) {
     const c = p.calendar;
     p.calendar = { weekendDays: c.weekendDays, holidays: c.holidays || [], workdays: c.workdays || [] };
-    for (const k of RETIRED) delete p.settings[k];
   }
   function resolveProfile(config, origin, projectId) {
     const r = validateConfig(config);
@@ -346,7 +344,7 @@
     const out = { ...DEFAULTS };
     for (const source of [profile && profile.settings, preferences])
       if (object(source))
-        for (const [k, v] of Object.entries(source)) if (!RETIRED.includes(k) && validPreference(k, v)) out[k] = v;
+        for (const [k, v] of Object.entries(source)) if (validPreference(k, v)) out[k] = v;
     return out;
   }
   return {

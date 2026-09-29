@@ -124,8 +124,9 @@ const cases = [
   make('forward: unknown key in progress and template', (v) => { v.profile.progress.mode = 'x'; v.template.variant = 2; }, true, false),
   make('invalid: known setting with a wrong type next to an unknown one', (v) => { v.profile.settings.sparkles = true; v.profile.settings.msColor = 'red'; }, false),
   make('invalid: __proto__ key in an unknown section', (v) => { v.profile.future = JSON.parse('{"__proto__": 1}'); }, false),
+  make('valid: drag-lock settings', (v) => { Object.assign(v.profile.settings, { ptLockDrag: true, epicLockDrag: false }); }, true),
+  make('invalid: drag-lock setting with a wrong type', (v) => { v.profile.settings.epicLockDrag = 'on'; }, false),
   // Older files and storage may still carry these; the extension accepts and ignores them, the admin tool never writes them.
-  make('legacy: retired drag-lock setting', (v) => { v.profile.settings.ptLockDrag = true; }, true, false),
   make('legacy: retired ICS address', (v) => { v.profile.calendar.sourceUrl = ''; }, true, false),
 ];
 const dir = process.argv[2];

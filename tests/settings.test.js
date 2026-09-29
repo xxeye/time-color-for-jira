@@ -165,14 +165,19 @@ test('project property: accepted shape, size limit and invalid days', () => {
   bad.profile.calendar.holidays = [{ date: '2027-01-01', name: '<b>' }];
   assert.equal(S.validateProperty(bad).ok, false);
 });
-test('retired drag-lock preferences are tolerated and ignored', () => {
+test('drag locks are display settings: off by default, project value kept, personal choice wins', () => {
+  assert.equal(S.DEFAULTS.ptLockDrag, false);
+  assert.equal(S.DEFAULTS.epicLockDrag, false);
   assert.equal(S.validatePreferences({ ptLockDrag: true, epicLockDrag: false }), true);
-  assert.equal('ptLockDrag' in S.effectiveSettings(null, { ptLockDrag: true }), false);
+  assert.equal(S.validatePreferences({ ptLockDrag: 'yes' }), false);
   const c = S.emptyConfig(),
     p = S.createProfile();
-  p.settings = { ptLockDrag: true };
+  p.settings = { ptLockDrag: true, epicLockDrag: true };
   c.sites['https://alpha.atlassian.net'] = { defaults: p, projects: {} };
   const r = S.validateConfig(c);
   assert.equal(r.ok, true);
-  assert.deepEqual(r.value.sites['https://alpha.atlassian.net'].defaults.settings, {});
+  assert.deepEqual(r.value.sites['https://alpha.atlassian.net'].defaults.settings, { ptLockDrag: true, epicLockDrag: true });
+  const s = S.effectiveSettings(p, { epicLockDrag: false });
+  assert.equal(s.ptLockDrag, true);
+  assert.equal(s.epicLockDrag, false);
 });

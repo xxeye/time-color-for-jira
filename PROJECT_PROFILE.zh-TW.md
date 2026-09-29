@@ -96,11 +96,10 @@
 | `msDiamond` | 布林 | `true` | Milestone 顯示成菱形 |
 | `msShowProgress` | 布林 | `true` | Milestone 進度徽章 |
 | `ptTargetEndShade` | 布林 | `false` | Planning Task 目標結束日之後加陰影（需要 `startDate`、`targetEnd` 欄位） |
+| `ptLockDrag`、`epicLockDrag` | 布林 | `false` | 鎖定 Timeline 上 Planning Task／Epic 的拖曳與拉長（要開啟任務請點左欄任務名稱）。擴充功能 1.0.0 會略過這兩個鍵，之後的版本才生效 |
 | `epicStripe` | 布林 | `false` | 符合 `highlightRule` 的 Epic 畫成虛線條紋（需要 `epicHighlight` 欄位） |
 | `hideCurrentMonth`、`hideIssueKey` | 布林 | `true`、`false` | 隱藏當月標籤、隱藏任務編號 |
 | `showWeekends`、`showHolidays`、`showWorkingDays` | 布林 | `true` | 週末、假日色帶與工作天數 |
-
-已移除的鍵 `ptLockDrag`、`epicLockDrag`（鎖定拖曳）會被忽略。
 
 ## 停用專案設定
 

@@ -132,6 +132,8 @@
     msDiamond: 'settingMsDiamond',
     msShowProgress: 'settingMsShowProgress',
     ptTargetEndShade: 'settingPtTargetEndShade',
+    ptLockDrag: 'settingPtLockDrag',
+    epicLockDrag: 'settingEpicLockDrag',
     hideCurrentMonth: 'settingHideCurrentMonth',
     hideIssueKey: 'settingHideIssueKey',
     showWeekends: 'settingShowWeekends',

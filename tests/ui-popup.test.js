@@ -176,8 +176,18 @@ test('color switches save their own preference', async () => {
   f.elements['pt-color-enabled'].checked = false;
   await f.elements['pt-color-enabled'].handlers.change();
   assert.deepEqual(f.patches, [{ ptColorEnabled: false }]);
-  assert.equal(f.elements['pt-lock-drag'], undefined);
   assert.equal(f.elements['refresh-calendar'], undefined);
+});
+
+test('drag-lock switches save their own preference', async () => {
+  const f = fixture();
+  await new Promise(setImmediate);
+  assert.equal(f.elements['pt-lock-drag'].checked, false);
+  f.elements['pt-lock-drag'].checked = true;
+  await f.elements['pt-lock-drag'].handlers.change();
+  f.elements['epic-lock-drag'].checked = true;
+  await f.elements['epic-lock-drag'].handlers.change();
+  assert.deepEqual(f.patches, [{ ptLockDrag: true }, { epicLockDrag: true }]);
 });
 
 test('an imported file that a project setting overrides is called out', async () => {
