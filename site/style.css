@@ -33,8 +33,8 @@ section{padding-bottom:56px}
 .nowrap{white-space:nowrap}
 .lead{font-size:18px;color:var(--muted);margin:0 0 24px}
 .cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-.badge{display:inline-block;padding:7px 14px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:14px;color:var(--muted)}
 .button{display:inline-block;padding:8px 18px;border-radius:6px;font-weight:600;text-decoration:none;background:var(--accent);color:var(--on-accent)}
+.button.secondary{background:var(--surface);border:1px solid var(--line);color:var(--text)}
 .fine{font-size:14px;color:var(--muted)}
 
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
