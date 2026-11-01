@@ -27,5 +27,5 @@ python pack.py
 
 ## Git
 
-- 換行一律 LF（`.gitattributes`）。
+- 直接 commit 到 `main`（歷史沒有 merge commit），換行一律 LF（`.gitattributes`）。
 - commit 訊息開頭標明 AI；push、發布版本等使用者說。
