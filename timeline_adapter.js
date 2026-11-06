@@ -6,7 +6,8 @@
   'use strict';
   const SEL_KEY = '[data-testid="native-issue-table.common.ui.issue-cells.issue-key.issue-key-cell"]';
   const SEL_ROOT = '[data-testid="software-board.timeline"]';
-  const SEL_OVERLAY = '[data-testid="timeline.chart-overlays.container"]';
+  // Jira dropped the "timeline." prefix in late 2026; keep both forms.
+  const SEL_OVERLAY = '[data-testid="timeline.chart-overlays.container"], [data-testid="chart-overlays.container"]';
   function getTable(doc) {
     return doc.querySelector(SEL_KEY)?.closest('table') || null;
   }
@@ -80,7 +81,7 @@
   function getOverlay(table) {
     if (!table) return null;
     const scope = table.closest('[data-testid="scroll-container.scroll-container"]') || table.parentElement;
-    const explicit = scope?.querySelector('[data-testid="timeline.chart-overlays.container"]');
+    const explicit = scope?.querySelector(SEL_OVERLAY);
     if (explicit && !table.contains(explicit)) return explicit;
     const candidates = [
       ...new Set(

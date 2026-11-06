@@ -30,7 +30,20 @@
     return isoDate(year, month, day) === iso ? Date.parse(iso + 'T00:00:00Z') : null;
   }
 
+  // Chinese month numerals as Jira renders them ("十一月 '25"); index + 1 is the month.
+  const ZH_MONTHS = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
+  // One month name in a header label: English ("Nov", "November"), "11 月" or "十一月".
+  const MONTH_TOKEN = String.raw`(?:[a-z]+\.?|\d{1,2}\s*月|[一二三四五六七八九十]{1,2}月)`;
+
   function monthNumber(label) {
+    const compact = label.replace(/\s+/g, '');
+    let match = compact.match(/^(\d{1,2})月$/);
+    if (match) return +match[1] >= 1 && +match[1] <= 12 ? +match[1] : null;
+    match = compact.match(/^([一二三四五六七八九十]{1,2})月$/);
+    if (match) {
+      const index = ZH_MONTHS.indexOf(match[1]);
+      return index < 0 ? null : index + 1;
+    }
     const normalized = label.toLowerCase().replace(/\.$/, '');
     if (normalized === 'sept') return 9;
     const index = MONTHS.findIndex((month) => month === normalized || month.slice(0, 3) === normalized);
@@ -78,7 +91,9 @@
     if (typeof text !== 'string') return null;
     const value = text.trim().replace(/\s+/g, ' ');
     const reference = Number.isInteger(referenceYear) ? referenceYear : null;
-    let match = value.match(/^([a-z]+\.?)\s*[-–]\s*([a-z]+\.?)(?:\s+(\d{4}|['’]\d{2}))?$/i);
+    let match = value.match(
+      new RegExp(String.raw`^(${MONTH_TOKEN})\s*[-–]\s*(${MONTH_TOKEN})(?:\s+(\d{4}|['’]\d{2}))?$`, 'i'),
+    );
     if (match) {
       const startMonth = monthNumber(match[1]),
         endMonth = monthNumber(match[2]);
@@ -89,7 +104,7 @@
     }
     match = value.match(/^(?:(\d{4})年\s*)?(\d{1,2})月$/);
     if (match) return period(match[1] ? +match[1] : reference, +match[2], 1);
-    match = value.match(/^([a-z]+\.?)(?:\s+(\d{4}|['’]\d{2}))?$/i);
+    match = value.match(new RegExp(String.raw`^(${MONTH_TOKEN})(?:\s+(\d{4}|['’]\d{2}))?$`, 'i'));
     if (match) {
       const month = monthNumber(match[1]);
       const year = match[2] ? (/^['’]/.test(match[2]) ? 2000 + Number(match[2].slice(1)) : +match[2]) : reference;
@@ -179,7 +194,15 @@
   // Jira appends a duration to bar date labels, e.g. "(8 天)" or "(8 days)".
   const DURATION_LABEL = /\(\s*[+-]?\d+\s*(?:天|days?)\s*\)/i;
 
-  const api = { parseDateLabel, parseLabelDates, parsePeriodLabel, createScale, modeFromLabel, DURATION_LABEL };
+  const api = {
+    parseDateLabel,
+    parseLabelDates,
+    parsePeriodLabel,
+    createScale,
+    modeFromLabel,
+    DURATION_LABEL,
+    MONTH_TOKEN,
+  };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.JptDates = api;
 })(globalThis);

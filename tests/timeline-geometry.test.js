@@ -44,6 +44,22 @@ test('week month bands resolve month and year rollover from trailing year', () =
     assert.equal(scale.endExclusive, end);
   }
 });
+test('Chinese week bands ("11 月 \'25", "12 月 / 1 月") read like English ones', () => {
+  const scale = geometry.readScale(
+    fixture([
+      { text: "12 月 '25", left: 0, numbers: [22, 23, 24, 25, 26, 27, 28] },
+      { text: '12 月 / 1 月', left: 255, numbers: [29, 30, 31, 1, 2, 3, 4] },
+      { text: "1 月 '26", left: 510, numbers: [5, 6, 7, 8, 9, 10, 11] },
+    ]),
+    dates,
+    'WEEKS',
+    2030,
+  );
+  assert.ok(scale);
+  assert.equal(scale.start, '2025-12-22');
+  assert.equal(scale.endExclusive, '2026-01-12');
+  assert.equal(scale.dateToX('2026-01-01'), 255 + (3 * 255) / 7);
+});
 test('yearless cross-year weeks follow adjacent dates instead of the current year', () => {
   for (const year of [2025, 2026, 2027]) {
     const scale = geometry.readScale(

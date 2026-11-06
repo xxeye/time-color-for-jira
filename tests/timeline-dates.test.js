@@ -65,6 +65,18 @@ test('month labels use explicit year or a required reference without current-tim
   for (const bad of ['Sep', '13月', '2026年0月', 'Sep 26', 'unknown']) assert.equal(D.parsePeriodLabel(bad), null);
 });
 
+test('Chinese header labels from the 2026-11 Jira update parse like English ones', () => {
+  // Week view "11 月 '25", month view "十一月 '25", quarter view "十月 - 十二月 '25".
+  for (const label of ["11 月 '25", '11 月', "十一月 '25", '十一月', '11月']) {
+    assert.deepEqual(D.parsePeriodLabel(label, 2025), { start: '2025-11-01', endExclusive: '2025-12-01' });
+  }
+  assert.deepEqual(D.parsePeriodLabel('十二月', 2026), { start: '2026-12-01', endExclusive: '2027-01-01' });
+  assert.deepEqual(D.parsePeriodLabel('一月 2027'), { start: '2027-01-01', endExclusive: '2027-02-01' });
+  assert.deepEqual(D.parsePeriodLabel("十月 - 十二月 '25"), { start: '2025-10-01', endExclusive: '2026-01-01' });
+  assert.deepEqual(D.parsePeriodLabel('一月 - 三月', 2026), { start: '2026-01-01', endExclusive: '2026-04-01' });
+  for (const bad of ['13 月', '0 月', '十三月', '月', '十一月 26']) assert.equal(D.parsePeriodLabel(bad, 2026), null);
+});
+
 test('quarters use true month boundaries including leap years and year rollover', () => {
   for (const label of ['Q1 2024', '2024 Q1', '第1季 2024', '2024年第1季', 'Q1']) {
     assert.deepEqual(D.parsePeriodLabel(label, 2024), { start: '2024-01-01', endExclusive: '2024-04-01' });

@@ -10,7 +10,8 @@
     return new Date(Date.parse(iso + 'T00:00:00Z') + DAY).toISOString().slice(0, 10);
   }
   function weekMonths(text, dates, referenceYear) {
-    const split = text?.match(/^([a-z]+\.?)\s*\/\s*([a-z]+\.?)(?:\s+(\d{4}|['’]\d{2}))?$/i);
+    const token = dates.MONTH_TOKEN;
+    const split = text?.match(new RegExp(String.raw`^(${token})\s*/\s*(${token})(?:\s+(\d{4}|['’]\d{2}))?$`, 'i'));
     if (!split) {
       const period = dates.parsePeriodLabel(text, referenceYear);
       return period ? [period.start.slice(0, 7)] : null;
