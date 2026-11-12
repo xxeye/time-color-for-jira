@@ -34,7 +34,6 @@
     #jpt-toolbar button:hover {background:var(--ds-background-neutral-hovered,#38414A)!important}
     #jpt-toolbar button:focus-visible {outline:2px solid var(--ds-border-focused,#85B8FF);outline-offset:2px}
     #jpt-toolbar button:disabled {cursor:wait;opacity:.6}
-    #jpt-toolbar .jpt-tb-icon {font-size:16px}
     #jpt-toolbar .jpt-tb-handle {padding:0 8px;cursor:grab;touch-action:none}
     @media (prefers-reduced-motion: no-preference) {#jpt-toolbar {transition:box-shadow .15s} #jpt-toolbar button {transition:background .15s}}
     #jpt-toolbar.dragging {box-shadow:0 6px 28px #669df166;opacity:.9}
@@ -45,6 +44,7 @@
     #jpt-toolbar .jpt-tb-flash {position:absolute;bottom:calc(100% + 6px);right:0;box-sizing:border-box;width:max-content;max-width:min(300px,calc(100vw - 16px));background:var(--ds-surface-overlay,#282A2E);border:1px solid var(--ds-border,#596773);border-radius:3px;padding:6px 10px;font-size:12px;white-space:normal;pointer-events:none}
     #jpt-toolbar .jpt-tb-flash:empty {display:none}
     #jpt-toolbar[data-side="top"] .jpt-tb-flash {bottom:auto;top:calc(100% + 6px);left:0;right:auto}
+    #jpt-toolbar[data-side="top"][data-align="end"] .jpt-tb-flash {left:auto;right:0}
   `;
   function createToolbar(env) {
     const { window: win, document: doc, client, adapter } = env;
@@ -93,6 +93,8 @@
       if (!bar) return;
       const r = bar.getBoundingClientRect();
       bar.setAttribute('data-side', pos.side);
+      // 上方且偏右時狀態提示改靠右展開，避免最寬 300px 的提示超出視窗右緣。
+      bar.setAttribute('data-align', pos.side === 'top' && pos.ratio > 0.5 ? 'end' : 'start');
       Object.assign(bar.style, { left: 'auto', right: 'auto', top: 'auto', bottom: 'auto' });
       if (pos.side === 'top') {
         bar.style.top = '8px';

@@ -149,6 +149,22 @@ test('keyboard position changes save valid positions without toggling enabled', 
   assert.deepEqual(f.writes, [{ side: 'right', ratio: 0 }]);
   f.api.destroy();
 });
+test('status message opens toward the roomier side when the bar sits on top', async () => {
+  for (const [position, align] of [
+    [{ side: 'top', ratio: 1 }, 'end'],
+    [{ side: 'top', ratio: 0.2 }, 'start'],
+    [{ side: 'right', ratio: 0.92 }, 'start'],
+  ]) {
+    const f = fixture({
+      getContext: async () => ({ configured: true, settings: { enabled: true }, position }),
+    });
+    await tick();
+    const bar = f.doc.body.children[0];
+    assert.equal(bar.attributes['data-side'], position.side);
+    assert.equal(bar.attributes['data-align'], align);
+    f.api.destroy();
+  }
+});
 test('route exit removes bar and pagehide releases subscriptions and polling', async () => {
   assert.equal(typeof T.createToolbar, 'function');
   const f = fixture();
