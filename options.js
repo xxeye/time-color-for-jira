@@ -24,7 +24,30 @@ async function run(button, task) {
     notice(errorMessage(e), true);
   } finally {
     button.disabled = false;
+    // 對話框關閉時瀏覽器要把焦點還給按鈕，但按鈕當下是停用的，焦點會掉到 body；等按鈕恢復再補回。
+    const active = document.activeElement;
+    if ((!active || active === document.body) && button.isConnected !== false) button.focus();
   }
+}
+// 取代 window.confirm：原生 <dialog> 的 showModal()，預設焦點在取消；只有按下確認鈕才算同意（Esc、取消都不算）。
+function ask(message, actionLabel) {
+  const dialog = $('confirm-dialog');
+  if (dialog.open) return Promise.resolve(false);
+  $('confirm-message').textContent = message;
+  $('confirm-ok').textContent = actionLabel;
+  dialog.returnValue = '';
+  return new Promise((resolve) => {
+    dialog.addEventListener(
+      'close',
+      () => {
+        const ok = dialog.returnValue === 'ok';
+        dialog.returnValue = '';
+        resolve(ok);
+      },
+      { once: true },
+    );
+    dialog.showModal();
+  });
 }
 function scopes(config) {
   return Object.entries(config.sites).flatMap(([origin, site]) => [
@@ -129,10 +152,11 @@ async function load() {
     remove.setAttribute('aria-label', t('removeSiteLabel', { origin }));
     remove.addEventListener('click', () =>
       run(remove, async () => {
-        if (!confirm(t('confirmRemoveSite', { origin }))) return;
+        if (!(await ask(t('confirmRemoveSite', { origin }), t('removeAction')))) return;
         await JptClient.removeSite(origin);
         await load();
         notice(t('siteRemoved'));
+        $('saved-heading').focus(); // 原按鈕已隨 load() 移除
       }),
     );
     row.append(remove);
@@ -176,7 +200,7 @@ $('apply').addEventListener('click', () =>
     $('config-file').disabled = true;
     $('discard').disabled = true;
     try {
-      const result = await JptUI.applyImport(JptClient, draft, () => confirm(t('confirmReplace')));
+      const result = await JptUI.applyImport(JptClient, draft, () => ask(t('confirmReplace'), t('replaceAction')));
       if (result.cancelled) {
         notice(t('replaceCancelled'));
         return;
@@ -210,7 +234,7 @@ $('export').addEventListener('click', () =>
 );
 $('restore').addEventListener('click', () =>
   run($('restore'), async () => {
-    if (!confirm(t('confirmRestore'))) return;
+    if (!(await ask(t('confirmRestore'), t('restoreAction')))) return;
     await JptClient.restoreConfig();
     await load();
     notice(t('configRestored'));
@@ -218,7 +242,7 @@ $('restore').addEventListener('click', () =>
 );
 $('reset').addEventListener('click', () =>
   run($('reset'), async () => {
-    if (!confirm(t('confirmResetAppearance'))) return;
+    if (!(await ask(t('confirmResetAppearance'), t('resetAction')))) return;
     await JptClient.resetPreferences();
     notice(t('appearanceReset'));
   }),

@@ -21,6 +21,14 @@
 .tools-body{padding-top:12px}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
 
+/* 確認對話框（取代 window.confirm）：原生 <dialog> + showModal()。
+   overscroll-behavior 兩條都要：否則在背景或對話框裡捲動會帶動後面的頁面。 */
+#confirm-dialog{max-width:min(480px,calc(100vw - 32px));padding:20px 24px;border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--surface);color:var(--text)}
+#confirm-dialog p{margin:0 0 16px}
+#confirm-dialog .actions{justify-content:flex-end}
+dialog:modal{overscroll-behavior:contain}
+dialog::backdrop{background:rgb(9 30 66 / .54);overflow:hidden;overscroll-behavior:contain}
+
 /* 頁籤：匯入與管理／產生設定檔（管理員），兩個頁籤同寬；預留捲軸寬度，切換時不左右跳動。 */
 html{scrollbar-gutter:stable}
 .page-tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line);margin-top:16px}
