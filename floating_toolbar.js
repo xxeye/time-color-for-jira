@@ -39,6 +39,7 @@
     #jpt-toolbar.dragging .jpt-tb-handle {cursor:grabbing}
     #jpt-toolbar .jpt-tb-label::before {content:'';width:8px;height:8px;border-radius:50%;margin-right:8px;background:var(--ds-icon-disabled,#5A5A5E)}
     #jpt-toolbar.jpt-tb-on .jpt-tb-label::before {background:var(--ds-icon-success,#4BCE97)}
+    @media (forced-colors: active) {#jpt-toolbar .jpt-tb-label::before {box-sizing:border-box;border:1px solid CanvasText} #jpt-toolbar.jpt-tb-on .jpt-tb-label::before {border-width:4px}}
     #jpt-toolbar .jpt-tb-flash {position:absolute;bottom:calc(100% + 6px);right:0;box-sizing:border-box;width:max-content;max-width:min(300px,calc(100vw - 16px));background:var(--ds-surface-overlay,#282A2E);border:1px solid var(--ds-border,#596773);border-radius:3px;padding:6px 10px;font-size:12px;white-space:normal;pointer-events:none}
     #jpt-toolbar .jpt-tb-flash:empty {display:none}
     #jpt-toolbar[data-side="top"] .jpt-tb-flash {bottom:auto;top:calc(100% + 6px);left:0;right:auto}

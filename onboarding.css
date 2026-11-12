@@ -75,7 +75,7 @@ select{
   border:1px solid var(--border-input);border-radius:var(--radius);
   background:var(--surface);color:var(--text);font:inherit;
 }
-select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+select:focus{outline:2px solid var(--focus);outline-offset:1px;border-color:var(--accent)}
 
 a{color:var(--accent);text-underline-offset:3px}
 :focus-visible{outline:2px solid var(--focus);outline-offset:3px}

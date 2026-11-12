@@ -178,9 +178,10 @@ input.hex {
 }
 input.hex:focus,
 input[type="color"]:focus {
-  outline: none;
+  /* 用 outline 不用 box-shadow：高對比（forced-colors）模式會拿掉陰影 */
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
 }
 
 /* ─── Checkbox row ────────────────────────── */
@@ -298,9 +299,9 @@ button:hover {
   color: var(--text);
 }
 button:focus-visible {
-  outline: none;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-bg);
 }
 
 .btn-primary {

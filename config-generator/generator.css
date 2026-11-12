@@ -53,7 +53,7 @@ legend + *{clear:both}
 .wide{grid-column:1/-1}
 label{display:block;font-weight:600;color:var(--ink)}
 input:not([type=checkbox]),select,textarea{display:block;width:100%;min-height:44px;font:inherit;color:var(--ink);background:var(--page);border:1px solid var(--border-input);border-radius:var(--radius);padding:8px 12px;margin-top:8px}
-input:not([type=checkbox]):focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+input:not([type=checkbox]):focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
 input[type=file]{padding:8px;max-width:520px}
 input[type=checkbox]{width:18px;height:18px;flex-shrink:0;accent-color:var(--accent);margin:4px 10px 0 0}
 small{display:block;font-size:13px;font-weight:400;color:var(--muted);margin-top:8px}
