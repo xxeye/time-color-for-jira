@@ -225,95 +225,6 @@ body.jpt-theme-dark .jpt-cal-strip.jpt-cal-holiday {
   background-color: rgba(255, 171, 102, 0.11);
 }
 
-/* ─── 浮動 Toolbar（啟用 toggle + 重新整理）─────────────────
-   樣式對齊 jira-people-view 浮動鈕 + Jira ADS 設計 token */
-/* Atlassian Design System tokens：var(--ds-xxx, fallback) — 沒拿到 token 就吃 fallback（dark）
- * Jira Cloud 切主題時 token 值自動換，不用我們做事；body.jpt-theme-light 由 JS 同步
- */
-#jpt-toolbar {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  z-index: 9998;
-  display: inline-flex;
-  align-items: stretch;
-  background: var(--ds-surface-raised, #2C333A);
-  border: 1px solid var(--ds-border, rgba(166, 174, 184, 0.10));
-  border-radius: 3px;
-  font-family: 'Atlassian Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--ds-text, #B6C2CF);
-  user-select: none;
-  transition: box-shadow 0.15s;
-  overflow: hidden;
-}
-#jpt-toolbar.dragging {
-  box-shadow: 0 6px 28px rgba(102, 157, 241, 0.4);
-  opacity: 0.9;
-}
-
-/* 拖曳手把 — 唯一可拖曳的區塊（其餘區塊只負責 click）*/
-.jpt-tb-handle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 8px;
-  font-size: 14px;
-  color: var(--ds-text-subtlest, #5C6168);
-  cursor: grab;
-  transition: color 0.15s, background 0.15s;
-}
-.jpt-tb-handle:hover {
-  color: var(--ds-text, #B6C2CF);
-  background: var(--ds-background-neutral-subtle-hovered, rgba(255, 255, 255, 0.04));
-}
-#jpt-toolbar.dragging .jpt-tb-handle { cursor: grabbing; color: var(--ds-text, #B6C2CF); }
-.jpt-tb-seg {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 12px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-.jpt-tb-seg:hover {
-  background: var(--ds-background-neutral-hovered, #38414A);
-  color: var(--ds-text, #CECFD2);
-}
-.jpt-tb-divider {
-  width: 1px;
-  background: var(--ds-border, rgba(166, 174, 184, 0.15));
-}
-.jpt-tb-icon {
-  padding: 6px 10px;
-  font-size: 16px;
-}
-.jpt-tb-refresh-ico {
-  display: inline-block;
-  font-size: 16px;
-  line-height: 1;
-}
-.jpt-tb-seg:active .jpt-tb-refresh-ico {
-  transform: rotate(180deg);
-  transition: transform 0.3s;
-}
-
-/* 啟用狀態指示燈 */
-.jpt-tb-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 8px;
-  background: var(--ds-icon-disabled, #5A5A5E);
-  transition: background 0.15s, box-shadow 0.15s;
-}
-#jpt-toolbar.jpt-tb-on .jpt-tb-dot {
-  background: var(--ds-icon-success, #4BCE97);
-  box-shadow: 0 0 6px rgba(75, 206, 151, 0.5);
-}
-#jpt-toolbar.jpt-tb-off .jpt-tb-label { color: var(--ds-text-subtle, #96999E); }
-
 /* ─── Hover tooltip：bar 滑入顯示職種 / Milestone relates 任務 ─── */
 #jpt-hover-tip {
   position: fixed;
@@ -422,29 +333,6 @@ body.jpt-theme-dark .jpt-cal-strip.jpt-cal-holiday {
 /* 自訂捲軸：標準 scrollbar-width／scrollbar-color（Chrome 121+；取代 ::-webkit-scrollbar，thumb 不再有 hover 變色） */
 #jpt-hover-tip { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.2) transparent; }
 
-/* 短暫狀態提示（重新整理後浮動字）*/
-.jpt-tb-flash {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--ds-surface-overlay, #282A2E);
-  border: 1px solid var(--ds-border, rgba(255, 255, 255, 0.10));
-  border-radius: 3px;
-  padding: 4px 10px;
-  font-size: 12px;
-  white-space: nowrap;
-  opacity: 0;
-  transition: opacity 0.2s;
-  pointer-events: none;
-}
-.jpt-tb-flash.show { opacity: 1; }
-.jpt-tb-flash-ok { color: var(--ds-text-success, #4BCE97); }
-.jpt-tb-flash-warn {
-  color: var(--ds-text-warning, #F5CD47);
-  border-color: var(--ds-border-warning, rgba(245, 205, 71, 0.40));
-}
-
 
 /* 工作天數浮動 overlay
  * body-level <span> 貼在 Jira bar 結束日 <small> 右邊，純視覺不污染 Jira DOM
@@ -492,9 +380,4 @@ body.jpt-theme-light .jpt-epic-highlight {
 /* hover tip 自訂捲軸 — dark 用白色 thumb；light 反過來 */
 body.jpt-theme-light #jpt-hover-tip {
   scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
-}
-
-/* toolbar handle hover — dark 用白色微亮；light 用黑色微亮 */
-body.jpt-theme-light .jpt-tb-handle:hover {
-  background: rgba(0, 0, 0, 0.06);
 }

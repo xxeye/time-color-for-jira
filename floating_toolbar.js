@@ -34,7 +34,9 @@
     #jpt-toolbar button:hover {background:var(--ds-background-neutral-hovered,#38414A)!important}
     #jpt-toolbar button:focus-visible {outline:2px solid var(--ds-border-focused,#85B8FF);outline-offset:2px}
     #jpt-toolbar button:disabled {cursor:wait;opacity:.6}
+    #jpt-toolbar .jpt-tb-icon {font-size:16px}
     #jpt-toolbar .jpt-tb-handle {padding:0 8px;cursor:grab;touch-action:none}
+    @media (prefers-reduced-motion: no-preference) {#jpt-toolbar {transition:box-shadow .15s} #jpt-toolbar button {transition:background .15s}}
     #jpt-toolbar.dragging {box-shadow:0 6px 28px #669df166;opacity:.9}
     #jpt-toolbar.dragging .jpt-tb-handle {cursor:grabbing}
     #jpt-toolbar .jpt-tb-label::before {content:'';width:8px;height:8px;border-radius:50%;margin-right:8px;background:var(--ds-icon-disabled,#5A5A5E)}
