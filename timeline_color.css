@@ -419,11 +419,8 @@ body.jpt-theme-dark .jpt-cal-strip.jpt-cal-holiday {
 .jpt-tip-done .jpt-tip-daterange,
 .jpt-tip-done .jpt-tip-summary { color: var(--ds-text-subtle, #96999E); text-decoration: line-through; }
 
-/* 自訂捲軸 */
-#jpt-hover-tip::-webkit-scrollbar { width: 8px; }
-#jpt-hover-tip::-webkit-scrollbar-track { background: transparent; }
-#jpt-hover-tip::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 4px; }
-#jpt-hover-tip::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
+/* 自訂捲軸：標準 scrollbar-width／scrollbar-color（Chrome 121+；取代 ::-webkit-scrollbar，thumb 不再有 hover 變色） */
+#jpt-hover-tip { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.2) transparent; }
 
 /* 短暫狀態提示（重新整理後浮動字）*/
 .jpt-tb-flash {
@@ -493,11 +490,8 @@ body.jpt-theme-light .jpt-epic-highlight {
 }
 
 /* hover tip 自訂捲軸 — dark 用白色 thumb；light 反過來 */
-body.jpt-theme-light #jpt-hover-tip::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.20);
-}
-body.jpt-theme-light #jpt-hover-tip::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.35);
+body.jpt-theme-light #jpt-hover-tip {
+  scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
 }
 
 /* toolbar handle hover — dark 用白色微亮；light 用黑色微亮 */
