@@ -2,7 +2,7 @@
   const api = factory(root);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root.chrome && root.chrome.runtime) root.JptClient = api.createClient(root.chrome);
-})(globalThis, function (root) {
+})(globalThis, /** @param {typeof globalThis} root */ function (root) {
   'use strict';
   const t = (key) => (root.JptI18n || require('./i18n.js').forLocale()).t(key);
   function createClient(chrome) {

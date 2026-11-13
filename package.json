@@ -1,11 +1,14 @@
 {
   "name": "time-color-for-jira",
   "private": true,
-  "description": "Development dependencies only; the extension itself has no build step (see pack.py).",
+  "description": "Development dependencies only; the extension itself has no build step (see pack.py). TypeScript only type-checks the .js files.",
   "scripts": {
-    "test": "node --test --test-isolation=none tests/*.test.js"
+    "test": "node --test --test-isolation=none tests/*.test.js",
+    "typecheck": "tsc -p tsconfig.json"
   },
   "devDependencies": {
-    "jsdom": "^29.1.1"
+    "@types/chrome": "^0.3.7",
+    "jsdom": "^29.1.1",
+    "typescript": "^7.0.2"
   }
 }

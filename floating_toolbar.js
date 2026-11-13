@@ -21,7 +21,7 @@
     },
   });
   root.__jptToolbar.start();
-})(globalThis, function (root) {
+})(globalThis, /** @param {typeof globalThis} root */ function (root) {
   'use strict';
   const t = (key, params) => (root.JptI18n || require('./i18n.js').forLocale()).t(key, params);
   const S = root.JptSettings || require('./settings.js');

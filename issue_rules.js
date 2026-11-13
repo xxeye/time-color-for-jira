@@ -1,4 +1,4 @@
-(function (root) {
+(/** @param {typeof globalThis} root */ function (root) {
   'use strict';
   function classifyIssue(issue, p) {
     const id = String(issue?.fields?.issuetype?.id ?? '');

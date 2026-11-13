@@ -13,12 +13,21 @@ Chrome 擴充功能：Timeline 上色、假日標示、工作日計算。公開 
 ## 指令
 
 ```bash
+npm run typecheck
 node --test --test-isolation=none tests/*.test.js
 python -m unittest discover -s tests -p "test_*.py"
 python pack.py
 ```
 
 `pack.py` 產生上架用的封裝檔（`dist/`，不進 git）。
+
+## 型別檢查（沒有建置步驟）
+
+- 用 TypeScript 檢查 `.js` 原始檔（`tsconfig.json`，`noEmit`）；出貨的仍是原始檔，`pack.py` 依白名單打包，`types/`、`type-tests/` 不出貨。
+- 檔案逐一納入：完成的檔案開頭加 `// @ts-check`（strict）；全部完成後再把 `checkJs` 改成 `true`。
+- 全域（`JptSettings` 等）的型別在 `types/globals.d.ts`，用 `typeof import(...)` 從實作推，不手寫介面。模組要用一個區域 `api` 同時掛全域與 `module.exports`，否則推不出型別。
+- `type-tests/*.ts` 用 `@ts-expect-error` 與 `notAny` 確認型別真的存在（零錯誤也可能是全變成 any）。
+- 外來資料（Jira 回應、專案屬性、storage、chrome 訊息）先當 `unknown`，過驗證器才有型別。
 
 ## 資料分級與機密
 
@@ -27,5 +36,6 @@ python pack.py
 
 ## Git
 
-- 直接 commit 到 `main`（歷史沒有 merge commit），換行一律 LF（`.gitattributes`）。
+- 小修直接 commit 到 `main`（歷史沒有 merge commit），換行一律 LF（`.gitattributes`）。
+- 多步驟的工作（例如型別導入）開分支、推送時用 PR；推送前整理 commit，不把修審查發現的零碎 commit 原樣推上去（使用者 2026-11-13）。
 - commit 訊息開頭標明 AI；push、發布版本等使用者說。

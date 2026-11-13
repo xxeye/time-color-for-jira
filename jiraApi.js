@@ -1,5 +1,5 @@
 /* Fixed same-origin read-only requests. Credentials are never read or stored. */
-(function (root) {
+(/** @param {typeof globalThis} root */ function (root) {
   'use strict';
   const abortError = () => new DOMException('Cancelled', 'AbortError');
   // Most issue keys per searchByKeys call; also the page size asked from Jira.

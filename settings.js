@@ -2,7 +2,7 @@
   const api = factory(root);
   if (typeof module === 'object' && module.exports) module.exports = api;
   root.JptSettings = api;
-})(globalThis, function (root) {
+})(globalThis, /** @param {typeof globalThis} root */ function (root) {
   'use strict';
   const t = (key) => (root.JptI18n || require('./i18n.js').forLocale()).t(key);
   const DEFAULTS = Object.freeze({

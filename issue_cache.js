@@ -1,4 +1,4 @@
-(function (root) {
+(/** @param {typeof globalThis} root */ function (root) {
   'use strict';
   class MemoryCache {
     constructor({ ttl = 300000, max = 200, clock = Date.now } = {}) {

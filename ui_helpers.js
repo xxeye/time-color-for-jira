@@ -1,4 +1,4 @@
-(function (root) {
+(/** @param {typeof globalThis} root */ function (root) {
   'use strict';
   const t = (key, params) => (root.JptI18n || require('./i18n.js').forLocale()).t(key, params);
   const labels = {
@@ -109,7 +109,8 @@
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-  root.JptUI = {
+  // One local object for both the global and CommonJS, so tsc infers the exports from the implementation.
+  const api = {
     safeTarget,
     applyImport,
     tabStatus,
@@ -120,5 +121,6 @@
     sourceText,
     calendarSummary,
   };
-  if (typeof module !== 'undefined') module.exports = root.JptUI;
+  root.JptUI = api;
+  if (typeof module !== 'undefined') module.exports = api;
 })(globalThis);
