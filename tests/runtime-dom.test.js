@@ -21,7 +21,7 @@ const profile = {
 // Every issue on the page is a Planning Task, so its bar gets colored.
 const allPlanning = async (keys) => keys.map((key) => ({ key, fields: { issuetype: { id: '10' } } }));
 
-function start({ body = fixture, searchByKeys = allPlanning } = {}) {
+function start({ body = fixture, searchByKeys = allPlanning, prefs = {} } = {}) {
   const dom = new JSDOM(`<!doctype html><body>${body}</body>`, { url: URL_TIMELINE, runScripts: 'outside-only' });
   const win = dom.window;
   const timers = new Map(),
@@ -55,7 +55,7 @@ function start({ body = fixture, searchByKeys = allPlanning } = {}) {
           return {};
         }
         async load() {
-          const settings = { ...S.DEFAULTS, enabled: true };
+          const settings = { ...S.DEFAULTS, enabled: true, ...prefs };
           return {
             state: 'ready',
             message: 'ready',
@@ -241,4 +241,54 @@ test('a Jira error keeps the project and source; leaving the Timeline clears the
   assert.equal(left.state, 'unsupported');
   assert.equal(left.projectId, null);
   assert.equal(left.source ?? null, null);
+});
+
+// Jira listens for mousedown on an ancestor of the bar (bubble phase); count what reaches it.
+const pressBar = (page) => {
+  const bar = page.doc.querySelector('.jpt-pt-bar');
+  let jiraHeard = 0;
+  page.win.JptTimeline.getTable(page.doc).addEventListener('mousedown', () => jiraHeard++);
+  return (button) => {
+    const before = jiraHeard;
+    const event = new page.win.MouseEvent('mousedown', { bubbles: true, cancelable: true, button });
+    bar.dispatchEvent(event);
+    return { prevented: event.defaultPrevented, reachedJira: jiraHeard > before };
+  };
+};
+
+test('with drag lock on, a left-button drag on a planning bar is stopped; right-click still reaches Jira', async () => {
+  const page = start({ prefs: { ptLockDrag: true } });
+  await page.settle();
+  const press = pressBar(page);
+  assert.deepEqual(press(0), { prevented: true, reachedJira: false });
+  assert.deepEqual(press(2), { prevented: false, reachedJira: true });
+});
+
+test('with drag lock off, Jira receives the drag', async () => {
+  const page = start({ prefs: { ptLockDrag: false } });
+  await page.settle();
+  assert.deepEqual(pressBar(page)(0), { prevented: false, reachedJira: true });
+});
+
+test('moving from one bar to another switches the hover card to the second issue', async () => {
+  const page = start({
+    searchByKeys: async (keys) =>
+      keys.map((key) => ({ key, fields: { issuetype: { id: '10' }, cf_role: [`role of ${key}`] } })),
+  });
+  await page.settle();
+  const T = page.win.JptTimeline;
+  const [first, second] = page.doc.querySelectorAll(T.SEL.BAR);
+  const keyOf = (bar) => T.getRowKey(bar.closest('tr'));
+  assert.notEqual(keyOf(first), keyOf(second));
+  const hover = async (bar) => {
+    bar.dispatchEvent(new page.win.MouseEvent('mouseover', { bubbles: true }));
+    await page.settle();
+    return page.doc.getElementById('jpt-hover-tip');
+  };
+  const shown = (tip) => ({ key: tip.dataset.key, role: tip.querySelector('.jpt-tip-role-chip').textContent });
+  assert.deepEqual(shown(await hover(first)), { key: keyOf(first), role: `role of ${keyOf(first)}` });
+  first.dispatchEvent(new page.win.MouseEvent('mouseout', { bubbles: true, relatedTarget: second }));
+  const tip = await hover(second);
+  assert.equal(tip.style.display, 'block');
+  assert.deepEqual(shown(tip), { key: keyOf(second), role: `role of ${keyOf(second)}` });
 });
