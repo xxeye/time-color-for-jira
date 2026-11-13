@@ -1,10 +1,17 @@
+// @ts-check
+/** @import { Appearance, Config, Position, Preferences, PreferencePatch, Profile, PropertyValue, ResolvedProfile, ValidationResult } from './types/domain' */
 (function (root, factory) {
   const api = factory(root);
   if (typeof module === 'object' && module.exports) module.exports = api;
   root.JptSettings = api;
 })(globalThis, /** @param {typeof globalThis} root */ function (root) {
   'use strict';
+  // Validator internals read untrusted JSON field by field after object() has checked its shape;
+  // `Loose` keeps that reading terse. It never leaves this file: public functions take `unknown`.
+  /** @typedef {Record<string, any>} Loose */
+  /** @param {string} key */
   const t = (key) => (root.JptI18n || require('./i18n.js').forLocale()).t(key);
+  /** @type {Readonly<Preferences>} */
   const DEFAULTS = Object.freeze({
     enabled: true,
     ptColorEnabled: true,
@@ -28,13 +35,17 @@
     PROPERTY_PROFILE_BYTES = 16000,
     MAX_HOLIDAYS = 300,
     MAX_WORKDAYS = 100;
+  /** @param {unknown} x @returns {x is Loose} */
   const object = (x) =>
     x !== null &&
     typeof x === 'object' &&
     !Array.isArray(x) &&
     (Object.getPrototypeOf(x) === Object.prototype || Object.getPrototypeOf(x) === null);
+  /** @param {unknown} x */
   const bytes = (x) => new TextEncoder().encode(JSON.stringify(x)).length;
+  /** @param {unknown} x @returns {x is string} */
   const id = (x) => typeof x === 'string' && /^[1-9]\d{0,19}$/.test(x);
+  /** @param {unknown} value @returns {string | null} */
   function normalizeOrigin(value) {
     try {
       if (typeof value !== 'string' || value.length > 253) return null;
@@ -53,6 +64,7 @@
       return null;
     }
   }
+  /** @returns {Profile} */
   function createProfile() {
     return {
       revision: 1,
@@ -65,20 +77,27 @@
       timelinePath: '',
     };
   }
+  /** @returns {Config} */
   function emptyConfig() {
     return { schemaVersion: 1, template: { id: 'planning-timeline', version: 1 }, sites: {} };
   }
+  /** @param {string} k @param {unknown} v @returns {k is keyof Preferences} */
   function validPreference(k, v) {
     return (
       Object.hasOwn(DEFAULTS, k) &&
-      (typeof DEFAULTS[k] === 'boolean' ? typeof v === 'boolean' : typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v))
+      (typeof DEFAULTS[/** @type {keyof Preferences} */ (k)] === 'boolean'
+        ? typeof v === 'boolean'
+        : typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v))
     );
   }
+  /** @param {unknown} x @returns {x is PreferencePatch} */
   function validatePreferences(x) {
     return object(x) && Object.entries(x).every(([k, v]) => validPreference(k, v));
   }
   // Floating toolbar position when the user has not moved it yet.
+  /** @type {Readonly<Position>} */
   const DEFAULT_POSITION = Object.freeze({ side: 'right', ratio: 0.92 });
+  /** @param {unknown} x @returns {x is Position} */
   function validatePosition(x) {
     return (
       object(x) &&
@@ -92,25 +111,48 @@
   }
   // kind 'file': an imported configuration file; kind 'property': the Jira project property
   // (PROJECT_PROFILE.md) holding one profile, read live instead of stored in sync storage.
+  /**
+   * @overload
+   * @param {unknown} raw
+   * @param {'file'} [kind]
+   * @returns {ValidationResult<Config>}
+   */
+  /**
+   * @overload
+   * @param {unknown} raw
+   * @param {'property'} kind
+   * @returns {ValidationResult<PropertyValue>}
+   */
+  /**
+   * @param {unknown} raw
+   * @param {'file' | 'property'} [kind]
+   * @returns {ValidationResult<Config> | ValidationResult<PropertyValue>}
+   */
   function validateConfig(raw, kind = 'file') {
     const property = kind === 'property';
+    /** @type {{ path: string, message: string }[]} */
     const errors = [];
+    /** @param {string} path @param {string} key */
     const err = (path, key) => {
       if (errors.length < 30) errors.push({ path, message: t(key) });
     };
     // Forward compatibility (PROJECT_PROFILE.md): keys this version doesn't know are dropped and
     // reported in `ignored`, so a newer admin tool can't switch off an older published extension.
     // Known keys keep their strict checks; breaking changes must raise schemaVersion instead.
+    /** @type {Map<object, Set<string>>} */
     const drop = new Map(),
+      /** @type {string[]} */
       ignored = [];
+    /** @param {object} x @param {string} k @param {string} path */
     const ignore = (x, k, path) => {
       if (!drop.has(x)) drop.set(x, new Set());
-      drop.get(x).add(k);
+      drop.get(x)?.add(k);
       if (ignored.length < 30) ignored.push(path);
     };
     try {
       const seen = new Set();
       let nodes = 0;
+      /** @param {unknown} x @param {string} path @param {number} depth */
       function scan(x, path, depth) {
         if (++nodes > 10000 || depth > 12) throw Error('limit');
         if (x && typeof x === 'object') {
@@ -119,7 +161,7 @@
           if (!Array.isArray(x) && !object(x)) throw Error('object');
           for (const k of Object.keys(x)) {
             if (['__proto__', 'prototype', 'constructor'].includes(k)) throw Error('key');
-            scan(x[k], path + '.' + k, depth + 1);
+            scan(/** @type {Loose} */ (x)[k], path + '.' + k, depth + 1);
           }
           seen.delete(x);
         } else if (!['string', 'number', 'boolean'].includes(typeof x) && x !== null) throw Error('value');
@@ -129,6 +171,7 @@
     } catch {
       return { ok: false, value: null, errors: [{ path: '$', message: t('vConfigInvalid') }] };
     }
+    /** @param {unknown} x @param {string[]} keys @param {string} path @param {string[]} [required] @returns {x is Loose} */
     function shape(x, keys, path, required = keys) {
       if (!object(x)) {
         err(path, 'vObjectRequired');
@@ -139,6 +182,7 @@
       return true;
     }
     // Display settings: known keys must have the right type; unknown keys are ignored.
+    /** @param {unknown} x @param {string} path */
     function preferences(x, path) {
       if (!object(x)) return false;
       let ok = true;
@@ -148,9 +192,11 @@
         else ignore(x, k, path + '.' + k);
       return ok;
     }
+    /** @param {unknown} x @param {string} path */
     function ids(x, path) {
       if (!Array.isArray(x) || x.length > 50 || !x.every(id) || new Set(x).size !== x.length) err(path, 'vIds');
     }
+    /** @param {unknown} list @param {string} path @param {number} max @param {Set<string>} seen */
     function days(list, path, max, seen) {
       if (list === undefined) return;
       if (!Array.isArray(list) || list.length > max) return err(path, 'vDays');
@@ -164,6 +210,7 @@
         seen.add(e.date);
       }
     }
+    /** @param {unknown} p @param {string} path */
     function profile(p, path) {
       if (
         !shape(
@@ -229,7 +276,7 @@
         if (
           !Array.isArray(p.calendar.weekendDays) ||
           p.calendar.weekendDays.length > 7 ||
-          !p.calendar.weekendDays.every((x) => Number.isInteger(x) && x >= 0 && x <= 6) ||
+          !p.calendar.weekendDays.every((/** @type {unknown} */ x) => typeof x === 'number' && Number.isInteger(x) && x >= 0 && x <= 6) ||
           new Set(p.calendar.weekendDays).size !== p.calendar.weekendDays.length
         )
           err(path + '.calendar.weekendDays', 'vWeekendDays');
@@ -246,7 +293,7 @@
         err(path + '.timelinePath', 'vTimelinePath');
       if (object(p.issueTypes) && object(p.fields) && settingsOk && object(p.progress)) {
         const settings = effectiveSettings(p, {}),
-          has = (role) => Array.isArray(p.issueTypes[role]) && p.issueTypes[role].length > 0;
+          has = (/** @type {string} */ role) => Array.isArray(p.issueTypes[role]) && p.issueTypes[role].length > 0;
         const shade = has('planning') && settings.ptTargetEndShade;
         const progress = has('milestone') && settings.msShowProgress && p.progress.enabled === true;
         const workingDays = ['planning', 'milestone', 'epic'].some(has) && settings.showWorkingDays;
@@ -259,7 +306,7 @@
           err(path + '.fields.epicHighlight', 'vEpicFlagRequired');
       }
     }
-    const label = (x) => x === undefined || (typeof x === 'string' && x.length <= 100 && !/[\x00-\x1f<>]/.test(x));
+    const label = (/** @type {unknown} */ x) => x === undefined || (typeof x === 'string' && x.length <= 100 && !/[\x00-\x1f<>]/.test(x));
     if (property) {
       if (shape(raw, ['schemaVersion', 'template', 'profile', 'generatedBy', 'updatedAt'], '$', ['schemaVersion', 'template', 'profile'])) {
         if (raw.schemaVersion !== 1) err('schemaVersion', 'vSchemaVersion');
@@ -312,7 +359,7 @@
     if (errors.length) return { ok: false, value: null, errors, ignored };
     // The replacer runs with `this` bound to the raw object that holds the key.
     const value = JSON.parse(
-      JSON.stringify(raw, function (k, v) {
+      JSON.stringify(raw, /** @this {object} @param {string} k @param {unknown} v */ function (k, v) {
         return drop.get(this)?.has(k) ? undefined : v;
       }),
     );
@@ -329,24 +376,29 @@
       for (const p of [site.defaults, ...Object.values(site.projects)].filter(Boolean)) normalize(p);
     return { ok: true, value, errors: [], ignored };
   }
+  /** @param {Loose} p */
   function normalize(p) {
     const c = p.calendar;
     p.calendar = { weekendDays: c.weekendDays, holidays: c.holidays || [], workdays: c.workdays || [] };
   }
+  /** @param {unknown} config @param {unknown} origin @param {unknown} projectId @returns {ResolvedProfile | null} */
   function resolveProfile(config, origin, projectId) {
     const r = validateConfig(config);
     if (!r.ok) return null;
-    const site = r.value.sites[normalizeOrigin(origin)];
+    const normalized = normalizeOrigin(origin);
+    const site = normalized ? r.value.sites[normalized] : undefined;
     if (!site) return null;
     const p = (id(projectId) && site.projects[projectId]) || site.defaults;
     return p ? { ...p, settings: { ...DEFAULTS, ...r.value.appearance, ...p.settings } } : null;
   }
+  /** @param {{ settings?: unknown } | null | undefined} profile @param {unknown} preferences @returns {Preferences} */
   function effectiveSettings(profile, preferences) {
+    /** @type {Loose} validPreference checks each key and value before it is copied. */
     const out = { ...DEFAULTS };
     for (const source of [profile && profile.settings, preferences])
       if (object(source))
         for (const [k, v] of Object.entries(source)) if (validPreference(k, v)) out[k] = v;
-    return out;
+    return /** @type {Preferences} */ (out);
   }
   return {
     DEFAULTS,
@@ -355,7 +407,7 @@
     normalizeOrigin,
     PROPERTY_KEY,
     validateConfig,
-    validateProperty: (raw) => validateConfig(raw, 'property'),
+    validateProperty: (/** @type {unknown} */ raw) => validateConfig(raw, 'property'),
     resolveProfile,
     effectiveSettings,
     validatePreferences,

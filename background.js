@@ -1,3 +1,4 @@
+// @ts-check
 /* The worker persists settings only; never task data. */
 importScripts('i18n.js', 'settings.js', 'settings_broker.js');
 const broker = JptSettingsBroker.createBroker(chrome);

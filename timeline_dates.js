@@ -1,3 +1,5 @@
+// @ts-check
+/** @import { DatePeriod, ScaleCell, TimelineMode, TimelineScale } from './types/model' */
 (/** @param {typeof globalThis} root */ function (root) {
   'use strict';
   const DAY = 86400000;
@@ -16,6 +18,7 @@
     'december',
   ];
 
+  /** @param {number} year @param {number} month @param {number} day @returns {string | null} */
   function isoDate(year, month, day) {
     if (!Number.isInteger(year) || year < 1000 || year > 9999 || month < 1 || month > 12 || day < 1 || day > 31)
       return null;
@@ -24,6 +27,7 @@
     return Number.isFinite(stamp) && new Date(stamp).toISOString().slice(0, 10) === iso ? iso : null;
   }
 
+  /** @param {unknown} iso @returns {number | null} */
   function stamp(iso) {
     if (typeof iso !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
     const [year, month, day] = iso.split('-').map(Number);
@@ -35,6 +39,7 @@
   // One month name in a header label: English ("Nov", "November"), "11 月" or "十一月".
   const MONTH_TOKEN = String.raw`(?:[a-z]+\.?|\d{1,2}\s*月|[一二三四五六七八九十]{1,2}月)`;
 
+  /** @param {string} label @returns {number | null} */
   function monthNumber(label) {
     const compact = label.replace(/\s+/g, '');
     let match = compact.match(/^(\d{1,2})月$/);
@@ -50,6 +55,7 @@
     return index < 0 ? null : index + 1;
   }
 
+  /** @param {unknown} text @returns {string | null} */
   function parseDateLabel(text) {
     if (typeof text !== 'string') return null;
     const value = text.trim();
@@ -67,8 +73,10 @@
   // Bar labels arrive left to right and may roll up both dates in a single element
   // ("A - B (75 天)"). Only separators surrounded by whitespace split, so ISO dates
   // such as 2026-09-28 stay intact. Unparsable parts are dropped, never guessed.
+  /** @param {unknown} texts @returns {string[]} */
   function parseLabelDates(texts) {
     if (!Array.isArray(texts)) return [];
+    /** @type {string[]} */
     const dates = [];
     for (const text of texts) {
       const label = typeof text === 'string' ? text : '';
@@ -80,17 +88,20 @@
     return dates;
   }
 
+  /** @param {number | null} year @param {number} month @param {number} length @returns {DatePeriod | null} */
   function period(year, month, length) {
+    if (year === null) return null;
     const start = isoDate(year, month, 1);
     const endMonth = month + length;
     const endExclusive = isoDate(year + Math.floor((endMonth - 1) / 12), ((endMonth - 1) % 12) + 1, 1);
     return start && endExclusive ? { start, endExclusive } : null;
   }
 
+  /** @param {unknown} text @param {unknown} [referenceYear] @returns {DatePeriod | null} */
   function parsePeriodLabel(text, referenceYear) {
     if (typeof text !== 'string') return null;
     const value = text.trim().replace(/\s+/g, ' ');
-    const reference = Number.isInteger(referenceYear) ? referenceYear : null;
+    const reference = typeof referenceYear === 'number' && Number.isInteger(referenceYear) ? referenceYear : null;
     let match = value.match(
       new RegExp(String.raw`^(${MONTH_TOKEN})\s*[-–]\s*(${MONTH_TOKEN})(?:\s+(\d{4}|['’]\d{2}))?$`, 'i'),
     );
@@ -122,11 +133,21 @@
 
   // Dates describe half-open cells. Inverse mapping snaps to the nearest day
   // boundary for drag operations. Missing or ambiguous cells never extrapolate.
+  /** @param {unknown} cells @returns {TimelineScale | null} */
   function createScale(cells) {
     if (!Array.isArray(cells) || !cells.length) return null;
+    /** @type {{ left: number, right: number, start: number, end: number }[]} */
     const segments = [];
-    for (const cell of cells) {
-      if (!cell || !Number.isFinite(cell.left) || !Number.isFinite(cell.right) || cell.right <= cell.left) return null;
+    for (const cell of /** @type {(Partial<ScaleCell> | null | undefined)[]} */ (cells)) {
+      if (
+        !cell ||
+        typeof cell.left !== 'number' ||
+        typeof cell.right !== 'number' ||
+        !Number.isFinite(cell.left) ||
+        !Number.isFinite(cell.right) ||
+        cell.right <= cell.left
+      )
+        return null;
       const start = stamp(cell.start),
         end = stamp(cell.endExclusive);
       if (start === null || end === null || end <= start) return null;
@@ -155,6 +176,7 @@
       endExclusive: normalized[normalized.length - 1].endExclusive,
       left: segments[0].left,
       right: last.right,
+      /** @param {unknown} iso */
       dateToX(iso) {
         const date = stamp(iso);
         if (date === null) return null;
@@ -162,6 +184,7 @@
         if (!segment) return date === last.end ? last.right : null;
         return segment.left + ((date - segment.start) / (segment.end - segment.start)) * (segment.right - segment.left);
       },
+      /** @param {number} x */
       xToDate(x) {
         if (!Number.isFinite(x)) return null;
         const segment = segments.find((cell) => x >= cell.left && x < cell.right);
@@ -175,6 +198,7 @@
 
   // Jira view-switcher labels in the UI languages handled so far. Unknown labels return null
   // so no date geometry is guessed.
+  /** @type {Readonly<Record<string, TimelineMode>>} */
   const MODE_LABELS = Object.freeze({
     週: 'WEEKS',
     周: 'WEEKS',
@@ -187,6 +211,7 @@
     Quarters: 'QUARTERS',
     Quarter: 'QUARTERS',
   });
+  /** @param {unknown} text @returns {TimelineMode | null} */
   function modeFromLabel(text) {
     const label = typeof text === 'string' ? text.trim() : '';
     return Object.hasOwn(MODE_LABELS, label) ? MODE_LABELS[label] : null;
