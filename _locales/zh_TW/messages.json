@@ -125,6 +125,7 @@
   "statusCantCheck": { "message": "暫時無法檢查 Jira，請稍後重試" },
   "statusAccessChanged": { "message": "Jira 登入或權限已變更，請重新檢查" },
   "statusPartialData": { "message": "部分資料暫時無法讀取，請稍後重新檢查" },
+  "statusNoIssueRows": { "message": "這個 Timeline 上找不到任務。如果畫面上有任務，可能是 Jira 改版了，請到 GitHub 回報" },
   "progressTitleWip": { "message": "{done} 完成 + {wip} 進行中（權重 {weight}） / {total} 總共 = {pct}%" },
   "progressTitle": { "message": "{done} 完成 / {total} 總共 = {pct}%" },
   "progressTitleDue": { "message": "Due date：{date}" },

@@ -19,7 +19,7 @@ test('overlay resolution excludes header duplicates and accepts the unlabelled b
 test('table resolution never selects an unrelated table', () => {
   assert.equal(typeof A.getTable, 'function');
   const table = {};
-  assert.equal(A.getTable({ querySelector: (s) => (s === A.SEL_KEY ? { closest: () => table } : null) }), table);
+  assert.equal(A.getTable({ querySelector: (s) => (s === A.SEL.KEY ? { closest: () => table } : null) }), table);
   assert.equal(A.getTable({ querySelector: (s) => (s === 'table' ? table : null) }), null);
 });
 test('project key accepts project paths and numeric project query without accepting board ID', () => {
@@ -34,7 +34,7 @@ test('project key accepts project paths and numeric project query without accept
 });
 test('ordinary board issue tables do not establish Timeline context', () => {
   assert.equal(typeof A.isTimelinePage, 'function');
-  const doc = { querySelector: (s) => (s === A.SEL_KEY ? {} : null) };
+  const doc = { querySelector: (s) => (s === A.SEL.KEY ? {} : null) };
   assert.equal(
     A.isTimelinePage(new URL('https://example.atlassian.net/jira/software/projects/ABC/boards/1'), doc),
     false,

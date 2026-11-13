@@ -3,10 +3,7 @@
 //
 // Jira Timeline DOM 結構：
 //   一個 issue = <table> 裡的一個 <tr>；key、summary、甘特圖 bar 都是同一列的儲存格，
-//   見 getTimelineRows() / extractIssueId() / extractIssueKey()。
-//   key text: [data-testid="native-issue-table.common.ui.issue-cells.issue-key.issue-key-cell"]
-//   bar:      [data-testid*="draggable-bar-"][data-testid$="-container"]
-//             （testid 內容形如 ...draggable-bar-ari:cloud:jira:<uuid>:issue/<數字ID>-container）
+//   Jira 的選擇器與查找都在 timeline_adapter.js（JptTimeline）。
 //
 //   ptColor    Planning Task 顏色（預設 #6a9a23）
 //   msColor    Milestone 顏色（預設 #FF8B00）
@@ -26,6 +23,7 @@
   const BATCH_PAUSE_MS = 120; // 分批抓取之間的間隔
   const SCAN_DELAY_MS = 300; // DOM 變動後合併成一次掃描
   const SCAN_RETRY_MS = 1500; // 頁面還沒渲染出列時，延遲重試
+  const NO_ROWS_REPORT_AFTER = 4; // 連續這麼多次（約 6 秒）找不到任務列才提示
   const RESCAN_AFTER_DRAG_MS = 1500; // 拖拉後等 Jira 存好日期再重掃
   const STRIP_REDRAW_DELAY_MS = 200; // 假日條紋重畫的合併延遲
   const SETTINGS_RELOAD_DELAY_MS = 350; // 設定變更通知的合併延遲
@@ -87,26 +85,13 @@
   const TYPE_TO_CLASS = { planning: PT_CLASS, milestone: MS_CLASS };
   const EPIC_TYPE_NAMES = new Set(['epic']);
 
-  // ─── 選擇器 ──────
-  const SEL_KEY = '[data-testid="native-issue-table.common.ui.issue-cells.issue-key.issue-key-cell"]';
-  const SEL_BAR_CONTAINER = '[data-testid*="draggable-bar-"][data-testid$="-container"]';
-
+  // ─── Jira DOM 查找（選擇器在 timeline_adapter.js）──────
+  const T = JptTimeline;
   // Timeline 那張 table：由 issue key 儲存格往上找；頁面還沒渲染出 key 時回 null。
-  const getTimelineTable = () => JptTimeline.getTable(document);
-
-  const getTimelineRows = () => {
-    const table = getTimelineTable();
-    return table ? [...table.querySelectorAll('tbody tr')] : [];
-  };
-
-  // bar 的 data-testid 現在長這樣（前綴沒變，但 <ID> 從純數字換成完整 ARI）：
-  //   roadmap.timeline-table-kit.ui.chart-item-content.date-content.bar.draggable-bar-ari:cloud:jira:<uuid>:issue/<數字ID>-container
-  // 我們只在乎結尾的數字 issue id，用「結尾符合」選取器直接比對，不用管中間的 uuid。
-  const extractIssueIdFromBar = (bar) => {
-    const m = (bar?.getAttribute('data-testid') || '').match(/issue\/(\d+)-container$/);
-    return m ? m[1] : null;
-  };
-  const findBarById = (id) => document.querySelector(`[data-testid$="issue/${id}-container"]`);
+  const getTimelineTable = () => T.getTable(document);
+  const getTimelineRows = () => T.getRows(getTimelineTable());
+  const extractIssueIdFromBar = T.issueIdOfBar;
+  const findBarById = (id) => T.findBar(document, id);
 
   // Only bounded, short-lived memory. No issue data is written into browser storage.
   const typeCache = new JptCache.MemoryCache({ ttl: TYPE_TTL_MS, max: 1000 });
@@ -147,7 +132,6 @@
   // 同一個 column-N 會有兩份（<thead> 裡的殘影、table 外層真正整欄的那份），哪份不透明隨捲動變化，
   // 所以每次檢查所有符合的節點，不能找到第一個就停。已加 class 的保留（加了之後背景透明，無法再判斷）；
   // 停用或關閉設定時才全部清除。
-  const SEL_COLUMN_OVERLAY = '[data-testid^="timeline.chart-overlays.columns-overlay.column-"]';
   const CURRENT_PERIOD_HIDE_CLASS = 'jpt-current-period-hidden';
   const applyCurrentPeriodHide = () => {
     if (!isActive() || !settings.hideCurrentMonth) {
@@ -156,7 +140,7 @@
         .forEach((el) => el.classList.remove(CURRENT_PERIOD_HIDE_CLASS));
       return;
     }
-    for (const col of document.querySelectorAll(SEL_COLUMN_OVERLAY)) {
+    for (const col of document.querySelectorAll(T.SEL.COLUMN_OVERLAY)) {
       if (col.classList.contains(CURRENT_PERIOD_HIDE_CLASS)) continue;
       const bg = getComputedStyle(col).backgroundColor;
       if (bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
@@ -167,16 +151,15 @@
 
   // 目前的週／月／季模式：URL 有帶 rangeMode／timeline 就用；否則讀切換按鈕的文字
   // （依站台語系，對照表在 JptDates.modeFromLabel）。
-  const SEL_MODE_SWITCHER_BUTTON = '[data-testid="aais-timeline-toolbar.ui.timeline-mode-switcher.expand-button"]';
   const getTimelineMode = () => {
     const params = new URLSearchParams(location.search);
     const fromUrl = params.get('rangeMode') || params.get('timeline');
     if (['WEEKS', 'MONTHS', 'QUARTERS'].includes(fromUrl)) return fromUrl;
-    for (const radio of document.querySelectorAll('[role="radio"][aria-checked="true"]')) {
+    for (const radio of document.querySelectorAll(T.SEL.MODE_RADIO)) {
       const mode = JptDates.modeFromLabel(radio.textContent);
       if (mode) return mode;
     }
-    for (const b of document.querySelectorAll(SEL_MODE_SWITCHER_BUTTON)) {
+    for (const b of document.querySelectorAll(T.SEL.MODE_BUTTON)) {
       const bg = getComputedStyle(b).backgroundColor;
       const selected =
         b.getAttribute('aria-pressed') === 'true' ||
@@ -268,7 +251,7 @@
     // 修飾鍵（除 Shift）放行給瀏覽器/Jira
     if (e.altKey || e.ctrlKey || e.metaKey) return;
 
-    const scroller = document.querySelector('[data-testid="scroll-container.scroll-container"]');
+    const scroller = T.getScroller(document);
     if (!scroller) return;
     // Only handle keys aimed at the Timeline itself or the page background; the side panel,
     // dialogs, menus, pickers and text fields keep their own keyboard behaviour.
@@ -292,6 +275,7 @@
     settingsReadVersion = 0;
   const loadSettings = async () => {
     const epoch = ++activationEpoch;
+    resetRowCheck();
     stopActive({ keepAppearance: !!profile && settings.enabled && isTimelinePage() });
     if (document.visibilityState === 'hidden') {
       session.clear();
@@ -354,11 +338,8 @@
 
   // ─── 抽 ID / Key ────────────────────────────────────
   // row 是 <tr>：key 在同一列找；id 從同一列的 bar 反推（沒填日期就沒有 bar，id 為 null，不上色）。
-  const extractIssueId = (row) => extractIssueIdFromBar(row.querySelector(SEL_BAR_CONTAINER));
-  const extractIssueKey = (row) => {
-    const keyEl = row.querySelector(SEL_KEY);
-    return keyEl?.textContent?.trim() || null;
-  };
+  const extractIssueId = (row) => T.issueIdOfBar(T.getRowBar(row));
+  const extractIssueKey = T.getRowKey;
 
   // ─── Milestone 進度 badge ──────────────────────────
   const progressColorTier = (pct) => {
@@ -367,7 +348,6 @@
     if (pct > 0) return 'jpt-ms-progress-low';
     return 'jpt-ms-progress-zero';
   };
-
 
   const renderProgressBadge = (bar, progress, dueDate) => {
     const existing = bar.querySelector(`:scope > .${PROGRESS_CLASS}`);
@@ -597,10 +577,31 @@
     }, SCAN_DELAY_MS);
   };
 
+  // 自我檢查：連續幾次都找不到任務列時，在面板狀態提示（可能是 Jira 改版，也可能這個 Timeline 本來就沒任務）。
+  // 找到任務列就恢復原狀態；期間狀態若被別的事件換掉（API 錯誤、設定重載），保留新的狀態。
+  let emptyScans = 0,
+    noRowsStatus = null,
+    statusBeforeNoRows = null;
+  const resetRowCheck = () => {
+    emptyScans = 0;
+    noRowsStatus = statusBeforeNoRows = null;
+  };
+  const noteRowsFound = (found) => {
+    if (found) {
+      if (noRowsStatus && status === noRowsStatus) status = statusBeforeNoRows;
+      resetRowCheck();
+      return;
+    }
+    if (++emptyScans < NO_ROWS_REPORT_AFTER || status.state !== 'ready') return;
+    statusBeforeNoRows = status;
+    status = noRowsStatus = { ...status, state: 'partial', message: t('statusNoIssueRows'), details: [] };
+  };
+
   const scan = async () => {
     if (!isActive()) return; // 防呆：停用時不掃描（含 cacheBuster / 殘留 timer）
     const listItems = getTimelineRows();
     if (DEBUG) console.log(`[jpt] scan: ${listItems.length} rows`);
+    noteRowsFound(listItems.length > 0);
     if (!listItems.length) {
       // F5 後 Jira 渲染慢、或 filter 套用時 DOM 暫時空 — 排程一次延遲重試
       if (!scanRetryTimer) {
@@ -990,7 +991,7 @@
     'mouseover',
     (e) => {
       if (!isActive()) return;
-      const bar = e.target.closest?.(SEL_BAR_CONTAINER);
+      const bar = T.closestBar(e.target);
       if (!bar) return;
       const id = extractIssueIdFromBar(bar);
       if (!id) return;
@@ -1017,7 +1018,7 @@
     'mousedown',
     (e) => {
       if (e.button !== 0) return; // 只攔左鍵 — 右鍵選單 / 中鍵不該被鎖定邏輯吞掉
-      const bar = e.target.closest?.('[data-testid*="draggable-bar-"][data-testid$="-container"]');
+      const bar = T.closestBar(e.target);
       if (!bar) {
         dragStart = null;
         return;
@@ -1070,7 +1071,7 @@
       wdDragLocked = false;
       // 拖完若 cursor 已不在原 bar 上 → 收 overlay；還在的話留著等下次 mouseout
       if (wasDragging && wdActiveBar) {
-        const onBar = e.target?.closest?.('[data-testid*="draggable-bar-"][data-testid$="-container"]') === wdActiveBar;
+        const onBar = T.closestBar(e.target) === wdActiveBar;
         if (!onBar) stopWdLoop();
       }
       if (!dragStart) return;
@@ -1092,7 +1093,7 @@
     document,
     'mouseout',
     (e) => {
-      const bar = e.target.closest?.('[data-testid*="draggable-bar-"][data-testid$="-container"]');
+      const bar = T.closestBar(e.target);
       if (!bar) return;
       // 拖拉中不收 working-day overlay（cursor 常滑出 bar；mouseup 才決定收/留）
       // 滑出 bar（且沒進到我們自己的 hover tooltip）→ 停 working-day overlay
@@ -1130,8 +1131,8 @@
         node.querySelectorAll?.('tr').forEach((n) => {
           if (isOurRow(n)) addedItems.add(n);
         });
-        if (node.matches?.(SEL_BAR_CONTAINER)) addedBars.add(node);
-        node.querySelectorAll?.(SEL_BAR_CONTAINER).forEach((b) => addedBars.add(b));
+        if (node.matches?.(T.SEL.BAR)) addedBars.add(node);
+        node.querySelectorAll?.(T.SEL.BAR).forEach((b) => addedBars.add(b));
       }
     }
     for (const item of addedItems) {
@@ -1267,6 +1268,7 @@
     clearInterval(purgeTimer);
     clearTimeout(reloadTimer);
     themeObserver?.disconnect();
+    document.body?.classList.remove('jpt-theme-light', 'jpt-theme-dark');
     unsubscribe?.();
     try {
       chrome.runtime.onMessage.removeListener(onMessage);
@@ -1283,7 +1285,8 @@
         sourceLabel: status.sourceLabel || '',
         sourceUpdatedAt: status.sourceUpdatedAt || '',
         years: status.years || [],
-        profileSettings: status.source === 'property' ? session.effective({ preferences: {} }).profile?.settings || null : null,
+        profileSettings:
+          status.source === 'property' ? session.effective({ preferences: {} }).profile?.settings || null : null,
       });
       return;
     }

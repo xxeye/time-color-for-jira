@@ -77,6 +77,7 @@ test('runtime installs safe status receiver and stays inert without matching tim
     JptDates: require('../timeline_dates.js'),
     JptI18n: require('../i18n.js').forLocale('en'),
     JptTimeline: {
+      ...require('../timeline_adapter.js'),
       isJiraApp: () => true,
       isTimelinePage: () => false,
       getTable: () => null,
