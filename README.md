@@ -94,7 +94,7 @@ node --test --test-isolation=none tests/*.test.js
 python -m unittest discover -s tests -p "test_*.py"
 ```
 
-`tests/browser-smoke.cjs` loads the extension in a real browser and needs [Playwright](https://playwright.dev/) installed separately.
+Run `npm install` once for the development dependency (jsdom). `tests/timeline-dom.test.js` checks the Jira DOM lookups against a de-identified Timeline in `tests/fixtures/timeline.html`; re-capture it when Jira changes its markup. Layout (positions, sizes) is checked by hand in Jira.
 
 ### Packaging
 
