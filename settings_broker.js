@@ -2,7 +2,7 @@
   const api = factory(typeof module === 'object' && module.exports ? require('./settings.js') : root.JptSettings, root);
   if (typeof module === 'object' && module.exports) module.exports = api;
   root.JptSettingsBroker = api;
-})(globalThis, function (S, root) {
+})(globalThis, /** @param {typeof import('./settings.js')} S @param {typeof globalThis} root */ function (S, root) {
   'use strict';
   const t = (key) => (root.JptI18n || require('./i18n.js').forLocale()).t(key);
   const PREFIX = 'jpt:profile:',

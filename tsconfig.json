@@ -1,0 +1,19 @@
+{
+  // Type check only: nothing is emitted and the extension ships the original .js files (see pack.py).
+  // Files opt in with `// @ts-check` one at a time; flip checkJs to true once every file has.
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "strict": true,
+    "noEmit": true,
+    "target": "ES2022",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    // popup.js and options.js run on different pages but both declare `t` and `$` at the top level.
+    "moduleDetection": "force",
+    "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker.ImportScripts"],
+    "types": ["chrome"],
+    "resolveJsonModule": true
+  },
+  "include": ["*.js", "config-generator/generator.js", "types/**/*.d.ts", "type-tests/**/*.ts"]
+}

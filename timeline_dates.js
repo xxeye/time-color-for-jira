@@ -1,4 +1,4 @@
-(function (root) {
+(/** @param {typeof globalThis} root */ function (root) {
   'use strict';
   const DAY = 86400000;
   const MONTHS = [

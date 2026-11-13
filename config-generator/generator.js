@@ -1,4 +1,4 @@
-(function (root) {
+(/** @param {typeof globalThis} root */ function (root) {
   'use strict';
   const S = typeof module === 'object' && module.exports ? require('../settings.js') : root.JptSettings;
   const t = (key, params) => (root.JptI18n || require('../i18n.js').forLocale()).t(key, params);

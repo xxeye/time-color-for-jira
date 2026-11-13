@@ -1,5 +1,5 @@
 /* Settings page tabs. The admin generator is a bundled extension page, loaded only when opened. */
-(function (root) {
+(/** @param {typeof globalThis} root */ function (root) {
   'use strict';
   function createTabs(doc, win) {
     const tabs = ['settings', 'generator'].map((name) => ({
