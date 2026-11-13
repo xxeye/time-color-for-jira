@@ -1,3 +1,6 @@
+// @ts-check
+/** @import { Position } from './types/domain' */
+/** @import { SettingsContext } from './types/messages' */
 (function (root, factory) {
   const api = factory(root);
   if (typeof module === 'object' && module.exports) {
@@ -7,7 +10,7 @@
   if (!root.JptClient || !root.JptTimeline || !root.JptTimeline.isJiraApp(root.location)) return;
   root.__jptToolbar?.destroy();
   root.__jptToolbar = api.createToolbar({
-    window: root,
+    window: /** @type {Window & typeof globalThis} */ (root),
     document: root.document,
     client: root.JptClient,
     adapter: root.JptTimeline,
@@ -23,11 +26,11 @@
   root.__jptToolbar.start();
 })(globalThis, /** @param {typeof globalThis} root */ function (root) {
   'use strict';
-  const t = (key, params) => (root.JptI18n || require('./i18n.js').forLocale()).t(key, params);
+  const t = (/** @type {string} */ key, /** @type {Record<string, unknown> | undefined} */ params = undefined) => (root.JptI18n || require('./i18n.js').forLocale()).t(key, params);
   const S = root.JptSettings || require('./settings.js');
   const DEFAULT_POS = S.DEFAULT_POSITION;
   const validPosition = S.validatePosition;
-  const clamp = (v) => Math.max(0, Math.min(1, v));
+  const clamp = (/** @type {number} */ v) => Math.max(0, Math.min(1, v));
   const TOOLBAR_STYLE = `
     #jpt-toolbar {position:fixed;z-index:9998;display:inline-flex;align-items:stretch;max-width:calc(100vw - 16px);background:var(--ds-surface-raised,#2C333A);border:1px solid var(--ds-border,#596773);border-radius:3px;font-family:'Atlassian Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;font-weight:500;color:var(--ds-text,#B6C2CF);user-select:none;overflow:visible}
     #jpt-toolbar button {display:inline-flex;align-items:center;justify-content:center;min-height:36px;cursor:pointer;padding:6px 12px;white-space:nowrap}
@@ -46,6 +49,20 @@
     #jpt-toolbar[data-side="top"] .jpt-tb-flash {bottom:auto;top:calc(100% + 6px);left:0;right:auto}
     #jpt-toolbar[data-side="top"][data-align="end"] .jpt-tb-flash {left:auto;right:0}
   `;
+  /**
+   * @typedef {object} ToolbarEnv
+   * @property {Window & typeof globalThis} window
+   * @property {Document} document
+   * @property {Pick<ReturnType<typeof import('./settings_client.js').createClient>, 'getContext' | 'savePreferences' | 'savePosition' | 'refresh' | 'subscribe'>} client
+   * @property {typeof import('./timeline_adapter.js')} adapter
+   * @property {ReturnType<typeof import('./page_bridge.js').create>} [page]
+   * @property {(fn: () => void, ms: number) => number} [setInterval]
+   * @property {(id: number | undefined) => void} [clearInterval]
+   * @property {(fn: () => void, ms: number) => number} [setTimeout]
+   * @property {(id: number | undefined) => void} [clearTimeout]
+   * @property {() => boolean} [isAlive]
+   */
+  /** @param {ToolbarEnv} env */
   function createToolbar(env) {
     const { window: win, document: doc, client, adapter } = env;
     const page = env.page || root.JptPage || require('./page_bridge.js').create();
@@ -54,10 +71,14 @@
     const later = env.setTimeout || win.setTimeout.bind(win),
       cancelLater = env.clearTimeout || win.clearTimeout.bind(win);
     const alive = env.isAlive || (() => true);
+    /** @type {HTMLElement | null} */
     let bar = null,
+      /** @type {HTMLButtonElement | null} */
       toggle = null,
+      /** @type {HTMLElement | null} */
       status = null,
       enabled = true,
+      /** @type {Position} */
       pos = { ...DEFAULT_POS },
       disposed = false,
       paused = false,
@@ -66,24 +87,32 @@
       version = 0,
       readVersion = 0,
       lastUrl = '',
+      /** @type {number | null} */
       poll = null,
+      /** @type {(() => void) | null} */
       unsubscribe = null,
+      /** @type {(() => void) | null} */
       stopDrag = null,
       pendingSync = false,
       reading = false;
+    /** @type {HTMLButtonElement | null} */
     let refreshButton = null,
       configured = false,
       projectReady = false,
       notice = '',
+      /** @type {number | null} */
       noticeTimer = null;
+    /** @type {(() => void)[]} */
     const listeners = [];
     // An imported file or the Jira project property (reported by the page) both configure the project.
+    /** @param {Partial<SettingsContext>} context */
     function applyPage(context) {
       const state = page.read();
       configured = !!context.configured || !!state?.configured;
       enabled =
         typeof state?.enabled === 'boolean' && state.configured ? state.enabled : context.settings?.enabled !== false;
     }
+    /** @param {EventTarget} target @param {string} type @param {(event: any) => void} handler DOM event of the named type */
     function listen(target, type, handler) {
       target.addEventListener(type, handler);
       listeners.push(() => target.removeEventListener(type, handler));
@@ -112,6 +141,7 @@
       notice = '';
       renderMessage();
     }
+    /** @param {string} text */
     function message(text) {
       clearMessage();
       notice = text;
@@ -126,21 +156,27 @@
       if (!bar) return;
       const ready = projectReady && configured,
         on = ready && enabled;
-      bar.classList.toggle('jpt-tb-on', on);
-      bar.classList.toggle('jpt-tb-off', !on);
-      toggle.textContent = t(!projectReady ? 'tbChecking' : !configured ? 'tbNotSetUp' : enabled ? 'tbOn' : 'tbOff');
-      toggle.setAttribute('aria-pressed', on);
-      toggle.disabled = !ready || busy;
+      // Only called after inject() has built the bar and its buttons.
+      const el = /** @type {HTMLElement} */ (bar),
+        button = /** @type {HTMLButtonElement} */ (toggle);
+      el.classList.toggle('jpt-tb-on', on);
+      el.classList.toggle('jpt-tb-off', !on);
+      button.textContent = t(!projectReady ? 'tbChecking' : !configured ? 'tbNotSetUp' : enabled ? 'tbOn' : 'tbOff');
+      button.setAttribute('aria-pressed', String(on));
+      button.disabled = !ready || busy;
       if (refreshButton) refreshButton.disabled = !ready || busy;
       renderMessage();
     }
-    function fail(error, action = t('tbActionReadSettings')) {
+    /** @param {unknown} thrown anything a rejected client call gave @param {string} [action] */
+    function fail(thrown, action = t('tbActionReadSettings')) {
+      const error = /** @type {{ code?: unknown, message?: string } | null | undefined} */ (thrown);
       if (!alive() || error?.code === 'disconnected') {
         destroy();
         return;
       }
       message(t('tbActionFailed', { action, reason: error?.message || t('tbTryAgain') }));
     }
+    /** @param {number} token */
     function done(token) {
       if (token !== version) return;
       busy = false;
@@ -157,6 +193,7 @@
       clearMessage();
       reflect();
     }
+    /** @param {Position} next */
     async function savePosition(next) {
       if (busy) return;
       begin();
@@ -176,6 +213,7 @@
         done(token);
       }
     }
+    /** @param {string} action @param {string} label @param {string} title @param {string} className */
     function addButton(action, label, title, className) {
       const button = doc.createElement('button');
       button.type = 'button';
@@ -185,9 +223,10 @@
       button.title = title;
       button.setAttribute('aria-label', title);
       Object.assign(button.style, { font: 'inherit', color: 'inherit', background: 'transparent', border: '0' });
-      bar.appendChild(button);
+      /** @type {HTMLElement} */ (bar).appendChild(button);
       return button;
     }
+    /** @param {Partial<SettingsContext>} context @param {boolean} ready */
     function inject(context, ready) {
       bar = doc.createElement('div');
       bar.id = 'jpt-toolbar';
@@ -265,11 +304,11 @@
         if (event.button !== 0 || busy) return;
         event.preventDefault();
         stopDrag?.();
-        const rect = bar.getBoundingClientRect(),
+        const rect = /** @type {HTMLElement} */ (bar).getBoundingClientRect(),
           x = event.clientX,
           y = event.clientY;
         let moved = false;
-        const move = (e) => {
+        const move = (/** @type {PointerEvent} */ e) => {
           if (e.pointerId !== event.pointerId) return;
           if (e.buttons === 0) {
             finish();
@@ -279,8 +318,8 @@
             dy = e.clientY - y;
           if (!moved && Math.hypot(dx, dy) < 4) return;
           moved = true;
-          bar.classList.add('dragging');
-          Object.assign(bar.style, { right: 'auto', left: rect.left + dx + 'px', top: rect.top + dy + 'px' });
+          /** @type {HTMLElement} */ (bar).classList.add('dragging');
+          Object.assign(/** @type {HTMLElement} */ (bar).style, { right: 'auto', left: rect.left + dx + 'px', top: rect.top + dy + 'px' });
         };
         const cleanup = () => {
           doc.removeEventListener('pointermove', move);
@@ -304,7 +343,7 @@
             ),
           });
         };
-        const up = (e) => {
+        const up = (/** @type {PointerEvent} */ e) => {
           if (e.pointerId === event.pointerId) finish();
         };
         const cancel = () => {

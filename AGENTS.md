@@ -24,7 +24,9 @@ python pack.py
 ## 型別檢查（沒有建置步驟）
 
 - 用 TypeScript 檢查 `.js` 原始檔（`tsconfig.json`，`noEmit`）；出貨的仍是原始檔，`pack.py` 依白名單打包，`types/`、`type-tests/` 不出貨。
-- 檔案逐一納入：完成的檔案開頭加 `// @ts-check`（strict）；全部完成後再把 `checkJs` 改成 `true`。
+- `checkJs: true`：`include` 裡的 `.js` 全部用 strict 檢查。新增的 `.js` 若不在 `include` 的路徑裡（例如新子資料夾），要加進 `include`。
+- 每個 `.js` 第一行仍放 `// @ts-check`：TypeScript 7.0.2 遇到檔案第一個註解就是 `/** @import */` 時會回報 Duplicate identifier（2026-11-13 試過）。
+- 計時器 id 清掉時設成 `null`：`types/globals.d.ts` 補了 `clearTimeout`／`clearInterval` 接受 `null` 的宣告。
 - 全域（`JptSettings` 等）的型別在 `types/globals.d.ts`，用 `typeof import(...)` 從實作推，不手寫介面。模組要用一個區域 `api` 同時掛全域與 `module.exports`，否則推不出型別。
 - `type-tests/*.ts` 用 `@ts-expect-error` 與 `notAny` 確認型別真的存在（零錯誤也可能是全變成 any）。
 - 外來資料（Jira 回應、專案屬性、storage、chrome 訊息）先當 `unknown`，過驗證器才有型別。

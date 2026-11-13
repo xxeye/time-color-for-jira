@@ -1,9 +1,10 @@
 {
   // Type check only: nothing is emitted and the extension ships the original .js files (see pack.py).
-  // Files opt in with `// @ts-check` one at a time; flip checkJs to true once every file has.
+  // Every included .js file is checked in strict mode; a new file is checked as soon as it matches `include`.
+  // Files still start with `// @ts-check`: tsc 7.0.2 reports duplicate identifiers when the first comment is `@import`.
   "compilerOptions": {
     "allowJs": true,
-    "checkJs": false,
+    "checkJs": true,
     "strict": true,
     "noEmit": true,
     "target": "ES2022",

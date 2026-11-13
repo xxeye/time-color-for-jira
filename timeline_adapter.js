@@ -1,3 +1,5 @@
+// @ts-check
+/** @typedef {Pick<Location, 'pathname' | 'search' | 'hash'>} PageLocation */
 (function (root, factory) {
   const api = factory();
   if (typeof module === 'object' && module.exports) module.exports = api;
@@ -26,20 +28,24 @@
     MODE_RADIO: '[role="radio"][aria-checked="true"]',
     MODE_BUTTON: '[data-testid="aais-timeline-toolbar.ui.timeline-mode-switcher.expand-button"]',
   });
+  /** @param {ParentNode} doc @returns {HTMLTableElement | null} */
   function getTable(doc) {
     return doc.querySelector(SEL.KEY)?.closest('table') || null;
   }
-  const getRows = (table) => (table ? [...table.querySelectorAll('tbody tr')] : []);
-  const getRowKey = (row) => row.querySelector(SEL.KEY)?.textContent?.trim() || null;
+  const getRows = (/** @type {HTMLTableElement | null} */ table) => (table ? [...table.querySelectorAll('tbody tr')] : []);
+  const getRowKey = (/** @type {Element} */ row) => row.querySelector(SEL.KEY)?.textContent?.trim() || null;
   // Rows without dates have no bar, so no id; those are not colored.
-  const getRowBar = (row) => row.querySelector(SEL.BAR);
-  const closestBar = (node) => node?.closest?.(SEL.BAR) || null;
+  const getRowBar = (/** @type {Element} */ row) => row.querySelector(SEL.BAR);
+  /** @param {EventTarget | Element | null | undefined} node @returns {Element | null} */
+  const closestBar = (node) => /** @type {Element | null | undefined} */ (node)?.closest?.(SEL.BAR) || null;
+  /** @param {Element | null | undefined} bar @returns {string | null} */
   function issueIdOfBar(bar) {
     const m = (bar?.getAttribute('data-testid') || '').match(/issue\/(\d+)-container$/);
     return m ? m[1] : null;
   }
-  const findBar = (doc, id) => (/^\d+$/.test(id) ? doc.querySelector(`[data-testid$="issue/${id}-container"]`) : null);
-  const getScroller = (doc) => doc.querySelector(SEL.SCROLLER);
+  const findBar = (/** @type {ParentNode} */ doc, /** @type {string} */ id) => (/^\d+$/.test(id) ? doc.querySelector(`[data-testid$="issue/${id}-container"]`) : null);
+  const getScroller = (/** @type {ParentNode} */ doc) => doc.querySelector(SEL.SCROLLER);
+  /** @param {PageLocation} location @returns {string | null} */
   function getProjectKey(location) {
     const match = (location.pathname || '').match(/\/(?:projects|project-config)\/([A-Za-z][A-Za-z0-9_]*|\d+)(?:\/|$)/);
     if (match) return match[1];
@@ -47,9 +53,11 @@
     return numeric && /^\d+$/.test(numeric) ? numeric : null;
   }
   // Confluence is served from the same atlassian.net origin but never hosts a Jira Timeline.
+  /** @param {PageLocation} location */
   function isJiraApp(location) {
     return !/^\/wiki(?:\/|$)/.test(location.pathname || '');
   }
+  /** @param {PageLocation} location @param {ParentNode} doc */
   function isTimelinePage(location, doc) {
     const path = location.pathname || '';
     // Board and project Timelines are supported; Plans (Advanced Roadmaps) is a different interface.
@@ -62,6 +70,7 @@
       !!doc.querySelector(SEL.ROOT)
     );
   }
+  /** @param {HTMLTableElement | null} table @returns {Element | null} */
   function getOverlay(table) {
     if (!table) return null;
     const scope = table.closest(SEL.SCROLLER) || table.parentElement;
@@ -69,7 +78,8 @@
     if (explicit && !table.contains(explicit)) return explicit;
     const candidates = [
       ...new Set(
-        [...scope.querySelectorAll(SEL.COLUMN_OVERLAY)]
+        // A table on the page always has a parent; a detached one throws here, as it did before typing.
+        [.../** @type {Element} */ (scope).querySelectorAll(SEL.COLUMN_OVERLAY)]
           .filter((el) => !table.contains(el) && el.getBoundingClientRect().height > 40)
           .map((el) => el.parentElement),
       ),

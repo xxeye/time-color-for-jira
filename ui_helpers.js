@@ -1,6 +1,11 @@
+// @ts-check
+/** @import { Config } from './types/domain' */
+/** @import { Done, ImportConflict } from './types/messages' */
+/** @import { PageContext, PageStatus, StatusState } from './types/runtime' */
 (/** @param {typeof globalThis} root */ function (root) {
   'use strict';
-  const t = (key, params) => (root.JptI18n || require('./i18n.js').forLocale()).t(key, params);
+  const t = (/** @type {string} */ key, /** @type {Record<string, unknown> | undefined} */ params = undefined) => (root.JptI18n || require('./i18n.js').forLocale()).t(key, params);
+  /** @type {Record<StatusState, string>} */
   const labels = {
     'needs-config': 'statusNeedsConfig',
     checking: 'statusChecking',
@@ -11,6 +16,7 @@
     unsupported: 'statusUnsupported',
     disabled: 'statusDisabled',
   };
+  /** @param {Config} config @param {string} origin @param {string} [projectId] */
   function safeTarget(config, origin, projectId) {
     if (!/^https:\/\/[a-z0-9-]+\.atlassian\.net$/.test(origin) || !Object.hasOwn(config.sites, origin))
       throw Error(t('chooseConfiguredSite'));
@@ -23,15 +29,29 @@
     if (target.origin !== origin) throw Error(t('entrySiteMismatch'));
     return target.href;
   }
+  /**
+   * @param {Pick<typeof JptClient, 'importConfig' | 'clearDraft'>} client
+   * @param {unknown} config
+   * @param {() => boolean | Promise<boolean>} confirmReplace
+   * @returns {Promise<Done | ImportConflict | { ok: false, cancelled: true }>}
+   */
   async function applyImport(client, config, confirmReplace) {
     let result = await client.importConfig(config, { replace: false });
-    if (!result.ok && (result.conflict || result.conflicts || result.code === 'conflict')) {
+    // `conflict` is not in the reply type; kept as the original check.
+    const loose = /** @type {{ ok: boolean, conflict?: unknown, conflicts?: unknown, code?: unknown }} */ (result);
+    if (!loose.ok && (loose.conflict || loose.conflicts || loose.code === 'conflict')) {
       if (!(await confirmReplace())) return { ok: false, cancelled: true };
       result = await client.importConfig(config, { replace: true });
     }
     if (result.ok) await client.clearDraft();
     return result;
   }
+  /**
+   * @param {{ tabs: Pick<typeof chrome.tabs, 'get' | 'query' | 'sendMessage'> }} api
+   * @param {boolean} [recheck]
+   * @param {number} [tabId]
+   * @returns {Promise<PageStatus>}
+   */
   async function tabStatus(api, recheck = false, tabId) {
     let tab;
     try {
@@ -45,11 +65,14 @@
       return { state: 'unavailable', message: t('reloadJiraTab'), details: [] };
     }
   }
+  /** @param {Document} doc @param {string} id */
+  const byId = (doc, id) => /** @type {HTMLElement} */ (doc.getElementById(id));
+  /** @param {PageStatus} status @param {Document} [doc] */
   function renderStatus(status, doc = document) {
-    doc.getElementById('runtime-title').textContent = t(
+    byId(doc, 'runtime-title').textContent = t(
       Object.hasOwn(labels, status.state) ? labels[status.state] : labels.unavailable,
     );
-    doc.getElementById('runtime-message').textContent = status.message || '';
+    byId(doc, 'runtime-message').textContent = status.message || '';
     const details = doc.getElementById('runtime-details');
     if (details) {
       details.replaceChildren();
@@ -58,9 +81,10 @@
         li.textContent = typeof item === 'string' ? item : item.message || item.feature || t('featureNeedsCheck');
         details.append(li);
       }
-      details.parentElement.hidden = !details.childElementCount;
+      /** @type {HTMLElement} */ (details.parentElement).hidden = !details.childElementCount;
     }
   }
+  /** @param {File | null | undefined} file @param {Pick<typeof JptSettings, 'validateConfig'>} settings */
   async function readConfig(file, settings) {
     if (!file) throw Error(t('chooseConfigFile'));
     if (file.size > 100000) throw Error(t('configTooLarge'));
@@ -77,7 +101,9 @@
     return result.value;
   }
   // [2025, 2026, 2027, 2029] -> '2025–2027, 2029'
+  /** @param {number[]} years */
   function yearRanges(years) {
+    /** @type {[number, number][]} */
     const groups = [];
     for (const year of [...years].sort((a, b) => a - b)) {
       const last = groups.at(-1);
@@ -87,6 +113,7 @@
     return groups.map(([a, b]) => (a === b ? String(a) : a + '–' + b)).join(t('listSeparator'));
   }
   // Where the settings on this page came from, and which years of holidays they cover.
+  /** @param {Partial<PageContext> | null | undefined} info */
   function sourceText(info) {
     if (info?.source === 'property') {
       const date = info.sourceUpdatedAt ? new Date(info.sourceUpdatedAt) : null;
@@ -98,9 +125,11 @@
     }
     return info?.source === 'file' ? t('sourceFile') : '';
   }
+  /** @param {number[] | null | undefined} years */
   function calendarSummary(years) {
     return years?.length ? t('calendarCoverage', { years: yearRanges(years) }) : t('calendarWeekendsOnly');
   }
+  /** @param {unknown} config */
   function download(config) {
     const url = URL.createObjectURL(new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' }));
     const a = document.createElement('a');

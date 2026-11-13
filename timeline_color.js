@@ -1,3 +1,22 @@
+// @ts-check
+/** @import { Preferences, PreferenceKey, Profile } from './types/domain' */
+/** @import { SettingsContext } from './types/messages' */
+/** @import { IssueData, IssueDetail, IssueKind, Progress, Relate, TimelineMode } from './types/model' */
+/** @import { ProfileSource, StatusDetail, StatusState } from './types/runtime' */
+/**
+ * What the popup and toolbar read about this page.
+ * @typedef {{ state: StatusState, message: string, details: StatusDetail[], projectId: string | null,
+ *   source?: ProfileSource, sourceLabel?: string, sourceUpdatedAt?: string, years?: number[] }} RuntimeStatus
+ */
+/**
+ * A dataCache entry. Fetched issues store their IssueData; issues the search did not return store
+ * `{ progress, relates, roles }` only.
+ * @typedef {Partial<IssueData> & Partial<IssueDetail> & { ts: number }} CachedData
+ */
+/**
+ * @typedef {{ x: number, y: number, id: string, key: string | undefined, rect: DOMRect,
+ *   startDate: string | null | undefined, dueDate: string | null | undefined }} DragStart
+ */
 // timeline_color.js
 // 在 Jira Timeline 把 Planning Task / Milestone 的時間軸條塊染色
 //
@@ -31,7 +50,9 @@
   const HOVER_HIDE_DELAY_MS = 150; // 滑鼠離開後收起懸停卡片
   const ROUTE_POLL_MS = 750; // 偵測網址與 Timeline 表格是否換掉
   const CACHE_PURGE_MS = 30000; // 定期清掉過期快取
+  /** @type {Preferences} */
   let settings = { ...DEFAULTS, enabled: false },
+    /** @type {Profile | null} */
     profile = null;
   let active = false,
     disposed = false,
@@ -40,13 +61,17 @@
   let requests = new AbortController();
   const lifetime = new AbortController();
   const session = new JptSession.RuntimeSession({ api: JiraApi, client: JptClient });
-  const t = (key, params) => JptI18n.t(key, params);
+  const t = (/** @type {string} */ key, /** @type {Record<string, unknown> | undefined} */ params = undefined) =>
+    JptI18n.t(key, params);
   // 面板讀到的狀態只透過這兩個函式改（每次都換成新物件，缺列提示靠物件身分判斷是否還有效）：
   // startStatus：新的一次檢查或失敗，上一個專案的 projectId／來源／年份全部清掉。
   // updateStatus：同一次檢查中狀況變了（資料讀取失敗、缺列），保留專案、來源、年份。
+  /** @type {RuntimeStatus} */
   let status;
+  /** @param {StatusState} state @param {string} message @param {Partial<RuntimeStatus>} [info] @returns {RuntimeStatus} */
   const startStatus = (state, message, info = {}) =>
     (status = { state, message, details: [], projectId: null, ...info });
+  /** @param {StatusState} state @param {string} message @returns {RuntimeStatus} */
   const updateStatus = (state, message) => (status = { ...status, state, message, details: [] });
   startStatus('checking', t('statusCheckingSettings'));
   // The toolbar reads this page through JptPage (page_bridge.js). "configured" counts the Jira project
@@ -66,12 +91,17 @@
     },
   });
   const isActive = () => active && settings.enabled && !disposed && isTimelinePage();
+  /**
+   * @param {EventTarget} target @param {string} type
+   * @param {(event: any) => void} handler DOM event of the named type
+   * @param {boolean | AddEventListenerOptions} [options]
+   */
   const on = (target, type, handler, options = {}) => {
     const opt = typeof options === 'boolean' ? { capture: options } : options;
     const input = ['keydown', 'mouseover', 'mouseout', 'mousedown', 'mouseup', 'scroll'].includes(type);
     target.addEventListener(
       type,
-      (event) => {
+      (/** @type {Event} */ event) => {
         if (!disposed && (!input || isActive())) handler(event);
       },
       { ...opt, signal: lifetime.signal },
@@ -94,16 +124,20 @@
   const getTimelineTable = () => T.getTable(document);
   const getTimelineRows = () => T.getRows(getTimelineTable());
   const extractIssueIdFromBar = T.issueIdOfBar;
-  const findBarById = (id) => T.findBar(document, id);
+  const findBarById = (/** @type {string} */ id) => T.findBar(document, id);
 
   // Only bounded, short-lived memory. No issue data is written into browser storage.
+  /** @type {InstanceType<typeof JptCache.MemoryCache<string, IssueKind>>} */
   const typeCache = new JptCache.MemoryCache({ ttl: TYPE_TTL_MS, max: 1000 });
+  /** @type {InstanceType<typeof JptCache.MemoryCache<string, CachedData>>} */
   const dataCache = new JptCache.MemoryCache({ ttl: DATA_TTL_MS, max: 1000 });
+  /** @type {InstanceType<typeof JptCache.MemoryCache<string, IssueDetail>>} */
   const detailCache = new JptCache.MemoryCache({ ttl: DATA_TTL_MS, max: 200 });
-  const getData = (key) => ({ ...dataCache.get(key), ...detailCache.get(key) });
+  const getData = (/** @type {string} */ key) => ({ ...dataCache.get(key), ...detailCache.get(key) });
+  /** @type {Set<string>} */
   const pending = new Set();
-  const isDataFresh = (entry) => !!entry && Date.now() - entry.ts < DATA_TTL_MS;
-  const needsFetch = (key) => !typeCache.has(key) || !isDataFresh(dataCache.get(key));
+  const isDataFresh = (/** @type {CachedData | undefined} */ entry) => !!entry && Date.now() - entry.ts < DATA_TTL_MS;
+  const needsFetch = (/** @type {string} */ key) => !typeCache.has(key) || !isDataFresh(dataCache.get(key));
 
   // ─── 設定：套到 :root CSS 變數 + body class ─────────
   const applyCssVars = () => {
@@ -154,10 +188,12 @@
 
   // 目前的週／月／季模式：URL 有帶 rangeMode／timeline 就用；否則讀切換按鈕的文字
   // （依站台語系，對照表在 JptDates.modeFromLabel）。
+  /** @returns {TimelineMode | null} */
   const getTimelineMode = () => {
     const params = new URLSearchParams(location.search);
     const fromUrl = params.get('rangeMode') || params.get('timeline');
-    if (['WEEKS', 'MONTHS', 'QUARTERS'].includes(fromUrl)) return fromUrl;
+    if (/** @type {(string | null)[]} */ (['WEEKS', 'MONTHS', 'QUARTERS']).includes(fromUrl))
+      return /** @type {TimelineMode} */ (fromUrl);
     for (const radio of document.querySelectorAll(T.SEL.MODE_RADIO)) {
       const mode = JptDates.modeFromLabel(radio.textContent);
       if (mode) return mode;
@@ -175,6 +211,7 @@
     return null; // Unknown mode must not produce guessed date geometry.
   };
 
+  /** @type {HTMLDivElement | null} */
   let stripLayer = null;
   const calendarScale = () => JptGeometry.readScale(getTimelineTable(), JptDates, getTimelineMode());
   const clearHolidayStrips = () => {
@@ -204,7 +241,10 @@
     }
     const parentRect = parent.getBoundingClientRect(),
       wanted = new Set();
-    const existing = new Map([...stripLayer.children].map((el) => [el.dataset.day, el]));
+    /** @type {Map<string | undefined, HTMLElement>} */
+    const existing = new Map(
+      /** @type {HTMLElement[]} */ ([...stripLayer.children]).map((el) => [el.dataset.day, el]),
+    );
     for (const cell of scale.cells) {
       const first = Date.parse(cell.start + 'T00:00:00Z'),
         end = Date.parse(cell.endExclusive + 'T00:00:00Z');
@@ -245,6 +285,7 @@
   // Widgets that use arrow keys themselves; never steal their keyboard input.
   const ARROW_KEY_EXCLUDED =
     'input, textarea, select, [contenteditable="true"], [role="dialog"], [role="alertdialog"], [role="menu"], [role="menubar"], [role="listbox"], [role="combobox"], [role="slider"], [role="spinbutton"], [role="tablist"], [role="tree"], [role="radiogroup"], #jpt-toolbar';
+  /** @param {KeyboardEvent} e */
   const onArrowKey = (e) => {
     if (!isActive()) return; // 方向鍵捲動已固化為預設行為
     if (!isTimelinePage()) return;
@@ -258,7 +299,7 @@
     if (!scroller) return;
     // Only handle keys aimed at the Timeline itself or the page background; the side panel,
     // dialogs, menus, pickers and text fields keep their own keyboard behaviour.
-    const t = e.target;
+    const t = /** @type {(Node & Partial<Pick<Element, 'closest'>>) | null} */ (e.target);
     const onPageBackground = t === document || t === document.body || t === document.documentElement;
     if (!onPageBackground && !scroller.contains(t)) return;
     if (t?.closest?.(ARROW_KEY_EXCLUDED) || document.querySelector('[aria-modal="true"]')) return;
@@ -273,7 +314,9 @@
 
   // 假日、補班日與涵蓋年份都來自設定（專案屬性或設定檔），不再另外下載
   let calendarInfo = JptCalendar.dayInfo();
+  /** @type {number | null} */
   let reloadTimer = null,
+    /** @type {string | null} */
     inputSignature = null,
     settingsReadVersion = 0;
   const loadSettings = async () => {
@@ -308,7 +351,8 @@
       });
       updateActivation();
       JptPage.notify();
-    } catch (error) {
+    } catch (thrown) {
+      const error = /** @type {{ name?: string, status?: number, retryAfterMs?: number }} */ (thrown);
       if (epoch !== activationEpoch || disposed || error.name === 'AbortError') return;
       settings.enabled = false;
       session.clear();
@@ -333,12 +377,13 @@
 
   // ─── 抽 ID / Key ────────────────────────────────────
   // row 是 <tr>：key 在同一列找；id 從同一列的 bar 反推（沒填日期就沒有 bar，id 為 null，不上色）。
-  const extractIssueId = (row) => T.issueIdOfBar(T.getRowBar(row));
+  const extractIssueId = (/** @type {Element} */ row) => T.issueIdOfBar(T.getRowBar(row));
   const extractIssueKey = T.getRowKey;
 
   // ─── Milestone 進度 badge ──────────────────────────
+  /** @param {Element} bar @param {Progress | null | undefined} progress @param {string | null | undefined} dueDate */
   const renderProgressBadge = (bar, progress, dueDate) => {
-    const existing = bar.querySelector(`:scope > .${PROGRESS_CLASS}`);
+    const existing = /** @type {HTMLElement | null} */ (bar.querySelector(`:scope > .${PROGRESS_CLASS}`));
     const badge = settings.msShowProgress
       ? JptModel.progressBadge(progress, dueDate, { weight: profile?.progress.inProgressWeight ?? 0, t })
       : null;
@@ -365,6 +410,7 @@
   // 預設樣式（捲動時尤其明顯），現在 class 沒變就完全不寫入。
   // badge 透過 renderProgressBadge 冪等處理（只在內容改變時才動 DOM）。
 
+  /** @param {HTMLElement} bar @param {Partial<IssueData> | null} data */
   const renderPtTargetEndShade = (bar, data) => {
     const clear = () => {
       bar.classList.remove(PT_TARGET_SHADE_CLASS);
@@ -382,22 +428,24 @@
     bar.style.setProperty('--jpt-target-end-ratio', `${(ratio * 100).toFixed(3)}%`);
     bar.classList.add(PT_TARGET_SHADE_CLASS);
   };
+  /** @param {string} issueId @param {string} issueKey */
   const applyColor = (issueId, issueKey) => {
     if (!isActive()) return; // 防呆：停用時絕不上色（含已排隊的 scan timer）
     if (!typeCache.has(issueKey)) return; // 還沒抓過 type，等 fetch 完才上色
-    const type = typeCache.get(issueKey);
+    const type = /** @type {IssueKind} */ (typeCache.get(issueKey));
+    /** @type {Partial<IssueData>} */
     const data = dataCache.get(issueKey) || { epicHighlight: false, progress: null };
-    const bar = findBarById(issueId);
+    const bar = /** @type {HTMLElement | null} */ (findBarById(issueId));
     if (!bar) return;
 
     const want = JptModel.barClasses(type, data, settings);
-    for (const [cls, on] of [
+    for (const [cls, on] of /** @type {[string, boolean][]} */ ([
       [PT_CLASS, want.planning],
       [MS_CLASS, want.milestone],
       [DIA_CLASS, want.diamond],
       [EPIC_BAR_CLASS, want.epic],
       [EPIC_HIGHLIGHT_CLASS, want.epicHighlight],
-    ])
+    ]))
       if (bar.classList.contains(cls) !== on) bar.classList.toggle(cls, on);
 
     // Milestone 才顯示 badge；其他類型清掉（renderProgressBadge 自身冪等）
@@ -412,6 +460,7 @@
   // 失敗的 key 不會進 cache，needsFetch 永遠 true，MutationObserver → scheduleScan
   // 會每 300ms 重發同一批失敗請求無限重打
   let fetchBackoffUntil = 0;
+  /** @param {string[]} keys */
   const fetchTypes = async (keys) => {
     if (!isActive() || !keys.length || Date.now() < fetchBackoffUntil) return;
     const epoch = generation,
@@ -424,12 +473,13 @@
       if (epoch !== generation || !isActive()) return;
       const seen = new Set();
       for (const issue of issues) {
-        if (!keys.includes(issue.key)) continue;
+        const key = /** @type {string} */ (issue.key);
+        if (!keys.includes(key)) continue;
         const record = JptRules.toIssueRecord(issue, profile, settings, location.origin);
-        typeCache.set(issue.key, record.type);
-        dataCache.set(issue.key, { ...record.data, ts: Date.now() });
-        detailCache.set(issue.key, record.detail);
-        seen.add(issue.key);
+        typeCache.set(key, record.type);
+        dataCache.set(key, { ...record.data, ts: Date.now() });
+        detailCache.set(key, record.detail);
+        seen.add(key);
       }
       for (const key of keys)
         if (!seen.has(key)) {
@@ -437,7 +487,8 @@
           dataCache.set(key, { progress: null, relates: [], roles: [], ts: Date.now() }, MISSING_ISSUE_TTL_MS);
         }
       fetchBackoffUntil = 0;
-    } catch (error) {
+    } catch (thrown) {
+      const error = /** @type {{ name?: string, status?: number, retryAfterMs?: number }} */ (thrown);
       if (error.name === 'AbortError' || epoch !== generation) return;
       fetchBackoffUntil = Date.now() + Math.max(FETCH_BACKOFF_MS, error.retryAfterMs || 0);
       if (error.status === 401 || error.status === 403) {
@@ -451,7 +502,9 @@
   };
 
   // ─── 主掃描（debounce）────────────────────────────
+  /** @type {number | null} */
   let scanTimer = null;
+  /** @type {number | null} */
   let scanRetryTimer = null;
   const scheduleScan = () => {
     if (!isActive()) return;
@@ -465,15 +518,18 @@
   // 自我檢查：連續幾次都找不到任務列時，在面板狀態提示（可能是 Jira 改版，也可能這個 Timeline 本來就沒任務）。
   // 找到任務列就恢復原狀態；期間狀態若被別的事件換掉（API 錯誤、設定重載），保留新的狀態。
   let emptyScans = 0,
+    /** @type {RuntimeStatus | null} */
     noRowsStatus = null,
+    /** @type {RuntimeStatus | null} */
     statusBeforeNoRows = null;
   const resetRowCheck = () => {
     emptyScans = 0;
     noRowsStatus = statusBeforeNoRows = null;
   };
+  /** @param {boolean} found */
   const noteRowsFound = (found) => {
     if (found) {
-      if (noRowsStatus && status === noRowsStatus) status = statusBeforeNoRows; // 唯一不經 start／updateStatus：還原快照
+      if (noRowsStatus && status === noRowsStatus) status = /** @type {RuntimeStatus} */ (statusBeforeNoRows); // 唯一不經 start／updateStatus：還原快照
       resetRowCheck();
       return;
     }
@@ -499,6 +555,7 @@
       return;
     }
 
+    /** @type {Map<string, string>} */
     const idByKey = new Map();
     idToKey.clear();
     for (const item of listItems) {
@@ -547,11 +604,16 @@
   // ─── Hover tooltip：bar 滑入顯示職種 / Milestone relates 任務 ─────
   // 設計：tooltip 永遠在 bar **上方** 顯示（必要時翻到下方），避免遮到 Jira 原生
   //       的左右日期標籤（May 25, 2026 那種會出現在 bar 左右兩側）
+  /** @type {Map<string, string>} */
   const idToKey = new Map(); // 由 scan() 維護：numeric id → issue key
+  /** @type {HTMLDivElement | null} */
   let hoverTipEl = null;
+  /** @type {number | null} */
   let hoverTipHideTimer = null;
+  /** @type {number | null} */
   let lazyFetchTimer = null; // Milestone hover 補抓 peer 起訖日的 debounce timer
 
+  /** @type {Record<string, string>} */
   const STATUS_ICON = { done: '✓', indeterminate: '◐', new: '○' };
 
   const ensureHoverTip = () => {
@@ -563,23 +625,29 @@
     document.body.appendChild(hoverTipEl);
     hoverTipEl.addEventListener('mouseenter', () => clearTimeout(hoverTipHideTimer));
     hoverTipEl.addEventListener('mouseleave', () => {
-      hoverTipEl.style.display = 'none';
-      hoverTipEl.textContent = '';
+      /** @type {HTMLDivElement} */ (hoverTipEl).style.display = 'none';
+      /** @type {HTMLDivElement} */ (hoverTipEl).textContent = '';
     });
     return hoverTipEl;
   };
 
-  const fmtMonthDay = (iso) => JptCalendar.monthDay(iso, '-');
+  const fmtMonthDay = (/** @type {string | null | undefined} */ iso) => JptCalendar.monthDay(iso, '-');
   // 「起 ~ 訖」字串；任一沒填補 '-'，都沒填顯示 '- ~ -'
-  const fmtDateRange = (start, due) => `${fmtMonthDay(start)} ~ ${fmtMonthDay(due)}`;
+  const fmtDateRange = (/** @type {string | null | undefined} */ start, /** @type {string | null | undefined} */ due) => `${fmtMonthDay(start)} ~ ${fmtMonthDay(due)}`;
 
   // 卡片用 DOM 組（文字一律走 textContent，不組 HTML 字串）；icon 網址在 JptRules.toIssueRecord 已限同站 https。
+  /**
+   * @template {keyof HTMLElementTagNameMap} K
+   * @param {K} tag @param {string} [className] @param {string | null} [text]
+   * @returns {HTMLElementTagNameMap[K]}
+   */
   const el = (tag, className, text) => {
     const node = document.createElement(tag);
     if (className) node.className = className;
     if (text != null) node.textContent = text;
     return node;
   };
+  /** @param {IssueKind} type @param {Partial<IssueDetail>} data */
   const buildTip = (type, data) => {
     if (type === 'planning') {
       if (!data.roles?.length) return null;
@@ -626,6 +694,7 @@
     return null;
   };
 
+  /** @param {Element | null} bar */
   const positionTipAboveBar = (bar) => {
     if (!isActive() || !bar?.isConnected || !hoverTipEl) return;
     const r = bar.getBoundingClientRect();
@@ -641,6 +710,7 @@
   };
 
   // tooltip 顯示期間的目標 bar — 捲動時要跟著 bar 重新定位（不然 tip 留在原地脫節）
+  /** @type {Element | null} */
   let hoverTipBar = null;
   let tipScrollRaf = 0;
   on(
@@ -666,6 +736,7 @@
     true,
   ); // capture：Jira timeline 的捲動發生在內層 scroller，不冒泡到 document
 
+  /** @param {Element} bar @param {string} key */
   const showHoverTip = (bar, key) => {
     if (!isActive()) return;
     const type = typeCache.get(key);
@@ -697,7 +768,9 @@
     // 完成後若 tip 還在顯示同一個 milestone 才更新 HTML。
     if (detailCache.has(key)) clearTimeout(lazyFetchTimer);
     if (type === 'milestone' && Array.isArray(data.relates) && data.relates.length) {
-      const missing = data.relates.map((r) => r.key).filter((k) => k && !dataCache.has(k) && !pending.has(k));
+      const missing = data.relates
+        .map((/** @type {Relate} */ r) => r.key)
+        .filter((/** @type {string} */ k) => k && !dataCache.has(k) && !pending.has(k));
       if (missing.length) {
         const epoch = generation;
         lazyFetchTimer = setTimeout(async () => {
@@ -728,8 +801,8 @@
     clearTimeout(hoverTipHideTimer);
     clearTimeout(lazyFetchTimer); // 滑鼠離開 → 取消還沒打的 peer 起訖日補抓
     hoverTipHideTimer = setTimeout(() => {
-      hoverTipEl.style.display = 'none';
-      hoverTipEl.textContent = '';
+      /** @type {HTMLDivElement} */ (hoverTipEl).style.display = 'none';
+      /** @type {HTMLDivElement} */ (hoverTipEl).textContent = '';
       hoverTipBar = null;
     }, HOVER_HIDE_DELAY_MS);
   };
@@ -744,15 +817,17 @@
   //
   // 起訖日來源依序：已存的起訖日（快取）→ bar 內的日期標籤 → 拖拉中用刻度換算拖動距離。
   // 工作天 = 起訖區間內扣掉週末、假日，加回補班日（JptCalendar.countWorkingDays）。
-  const countWorkingDays = (start, end) =>
+  const countWorkingDays = (/** @type {Date} */ start, /** @type {Date} */ end) =>
     JptCalendar.countWorkingDays(JptCalendar.localYmd(start), JptCalendar.localYmd(end), calendarInfo);
 
+  /** @param {Element} bar */
   const computeBarDayRange = (bar) => {
-    const key = idToKey.get(extractIssueIdFromBar(bar)),
-      cached = dataCache.get(key);
+    const key = idToKey.get(/** @type {string} */ (extractIssueIdFromBar(bar))),
+      cached = dataCache.get(/** @type {string} */ (key));
+    /** @param {string} start @param {string} end */
     const toRange = (start, end) => {
       if (JptCalendar.parseDate(start) === null || JptCalendar.parseDate(end) === null || start > end) return null;
-      const local = (iso) => {
+      const local = (/** @type {string} */ iso) => {
         const [y, m, d] = iso.split('-').map(Number);
         return new Date(y, m - 1, d);
       };
@@ -792,8 +867,11 @@
   // 「DOM 與 vDOM 不一致」例外讓整個 timeline 掛掉）。改用 body-level <span>
   // 靠 BCR 貼在 bar 結束日標籤右邊 — 純視覺，不污染 Jira DOM。
   const WD_DURATION_RE = JptDates.DURATION_LABEL;
+  /** @type {HTMLSpanElement | null} */
   let wdOverlayEl = null;
+  /** @type {number | null} */
   let wdRafId = null;
+  /** @type {Element | null} */
   let wdActiveBar = null;
 
   const ensureWdOverlay = () => {
@@ -806,8 +884,10 @@
   };
 
   // 找 bar 內最右邊那個有「(N 天) / (+N 天)」字樣的 <small>（結束日標籤）
+  /** @param {Element} bar */
   const findEndDateLabel = (bar) => {
     const smalls = bar.querySelectorAll('small');
+    /** @type {HTMLElement | null} */
     let best = null,
       bestRight = -Infinity;
     for (const s of smalls) {
@@ -860,6 +940,7 @@
   };
 
   // 拖拉時 Jira 持續 re-render label，用 rAF loop 持續更新 overlay 位置與工作天數
+  /** @param {Element} bar */
   const startWdLoop = (bar) => {
     if (!settings.showWorkingDays) return;
     if (bar.classList.contains(DIA_CLASS)) return; // 菱形是時間點，沒區間意義
@@ -907,6 +988,7 @@
   // ─── 偵測「使用者拖完 bar 改日期」→ 主動失效該 issue 的 cache，下次 scan 重抓 ─
   // bar 拖拉時：mousedown on bar → mousemove → mouseup（座標可能變了）
   // 這邊不嚴謹判斷成功與否，只要 mouseup 跟 mousedown 距離 > 4px 就視為可能改了日期
+  /** @type {DragStart | null} */
   let dragStart = null;
   let wdDragLocked = false; // 拖拉中：mouseout 不收 overlay（cursor 常離開 bar 範圍）
   on(
@@ -934,7 +1016,7 @@
       const id = extractIssueIdFromBar(bar);
       if (!id) return;
       const key = idToKey.get(id),
-        cached = dataCache.get(key);
+        cached = dataCache.get(/** @type {string} */ (key));
       dragStart = {
         x: e.clientX,
         y: e.clientY,
@@ -1001,7 +1083,9 @@
     true,
   );
 
+  /** @type {MutationObserver | null} */
   let domObserver = null,
+    /** @type {Node | null} */
     observedRoot = null;
   // 對「新加入」的 list-item 立即從 cache 套色（不等 300ms scheduleScan debounce）。
   // 捲動時 Jira virtualizer 不停加/刪 list-item，新進場的 bar 若等 debounce 才上色，
@@ -1009,6 +1093,7 @@
   // Jira virtualizer 對 list-item（左欄）跟 bar（右欄 chart-item）的 DOM 進出
   // 不一定同 batch — Epic 預設色比較顯眼，bar 進場若沒立刻套色就會閃實心。
   // 兩條路徑都攔：list-item 進場 → 從 list-item 解 id/key；bar 進場 → 經 idToKey 反查。
+  /** @param {MutationRecord[]} [mutations] */
   const applyCachedColorToAddedItems = (mutations) => {
     if (!isActive()) return;
     if (!mutations) return; // startActive 首次手動呼叫沒帶參數 → 走全頁 scan 即可
@@ -1017,12 +1102,15 @@
     // 其他不相關的 <tr>（例如彈出視窗裡剛好也有表格）。
     const table = getTimelineTable();
     if (!table) return;
-    const isOurRow = (n) => n.tagName === 'TR' && n.closest('table') === table;
+    const isOurRow = (/** @type {Element} */ n) => n.tagName === 'TR' && n.closest('table') === table;
+    /** @type {Set<Element>} */
     const addedItems = new Set();
+    /** @type {Set<Element>} */
     const addedBars = new Set();
     for (const m of mutations) {
-      for (const node of m.addedNodes) {
-        if (node.nodeType !== 1) continue;
+      for (const added of m.addedNodes) {
+        if (added.nodeType !== 1) continue;
+        const node = /** @type {Element} */ (added);
         if (isOurRow(node)) addedItems.add(node);
         node.querySelectorAll?.('tr').forEach((n) => {
           if (isOurRow(n)) addedItems.add(n);
@@ -1045,6 +1133,7 @@
   };
   // drawHolidayStrips 內含 getBoundingClientRect（強制 reflow），不能每個 mutation
   // batch 都直接跑 — 捲動/拖曳期間 Jira virtualizer 高頻觸發，會變效能熱點
+  /** @type {number | null} */
   let stripTimer = null;
   const scheduleDrawHolidayStrips = () => {
     if (!isActive()) return;
@@ -1054,10 +1143,11 @@
       drawHolidayStrips();
     }, STRIP_REDRAW_DELAY_MS);
   };
+  /** @param {MutationRecord[]} [mutations] */
   const onMutation = (mutations) => {
     if (
       mutations?.length &&
-      mutations.every((m) => m.target.closest?.('.jpt-calendar-layer,#jpt-wd-overlay,#jpt-toolbar'))
+      mutations.every((m) => /** @type {Element} */ (m.target).closest?.('.jpt-calendar-layer,#jpt-wd-overlay,#jpt-toolbar'))
     )
       return;
     applyCachedColorToAddedItems(mutations);
@@ -1077,6 +1167,7 @@
     observedRoot = getTimelineTable()?.parentElement || document.body;
     domObserver.observe(observedRoot, { childList: true, subtree: true, characterData: true });
   };
+  /** @param {{ keepAppearance?: boolean }} [options] */
   const stopActive = ({ keepAppearance = false } = {}) => {
     active = false;
     generation++;
@@ -1104,7 +1195,7 @@
     clearTimeout(hoverTipHideTimer);
     cancelAnimationFrame(tipScrollRaf);
     tipScrollRaf = 0;
-    document.querySelectorAll(ALL_CLASSES.map((c) => '.' + c).join(',')).forEach((el) => {
+    /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(ALL_CLASSES.map((c) => '.' + c).join(','))).forEach((el) => {
       el.classList.remove(...ALL_CLASSES);
       el.style.removeProperty('--jpt-target-end-ratio');
     });
@@ -1149,9 +1240,13 @@
     document.body.classList.toggle('jpt-theme-dark', timeline && resolved !== 'light');
   };
 
+  /** @type {number | null} */
   let routeTimer = null,
+    /** @type {number | null} */
     purgeTimer = null,
+    /** @type {MutationObserver | null} */
     themeObserver = null,
+    /** @type {(() => void) | null} */
     unsubscribe = null;
   const dispose = () => {
     if (disposed) return;
@@ -1171,6 +1266,11 @@
       chrome.runtime.onMessage.removeListener(onMessage);
     } catch {}
   };
+  /**
+   * @param {{ type?: unknown, recheck?: unknown }} message
+   * @param {chrome.runtime.MessageSender} sender
+   * @param {(response: unknown) => void} reply
+   */
   const onMessage = (message, sender, reply) => {
     if (sender.id !== chrome.runtime.id) return;
     if (message.type === 'jpt:context') {
@@ -1183,7 +1283,7 @@
         sourceUpdatedAt: status.sourceUpdatedAt || '',
         years: status.years || [],
         profileSettings:
-          status.source === 'property' ? session.effective({ preferences: {} }).profile?.settings || null : null,
+          status.source === 'property' ? session.effective(/** @type {SettingsContext} */ ({ preferences: {} })).profile?.settings || null : null,
       });
       return;
     }
@@ -1237,7 +1337,7 @@
         const displayOnly =
           previous &&
           Object.keys(context.settings).every(
-            (key) => context.settings[key] === previous.settings[key] || displayKeys.has(key),
+            (key) => context.settings[/** @type {PreferenceKey} */ (key)] === previous.settings[key] || displayKeys.has(key),
           );
         // Display-only preferences neither invalidate issue data nor remove active CSS classes.
         if (
@@ -1315,7 +1415,11 @@
       typeCache.purge();
       dataCache.purge();
       detailCache.purge();
-      if (hoverTipBar && !detailCache.has(idToKey.get(extractIssueIdFromBar(hoverTipBar)))) hideHoverTip();
+      if (
+        hoverTipBar &&
+        !detailCache.has(/** @type {string} */ (idToKey.get(/** @type {string} */ (extractIssueIdFromBar(hoverTipBar)))))
+      )
+        hideHoverTip();
     }, CACHE_PURGE_MS);
     await loadSettings();
   };
