@@ -12,8 +12,8 @@ const runtimeSource = read('timeline_color.js');
 const URL_TIMELINE = 'https://demo.atlassian.net/jira/software/projects/DEMO/boards/1/timeline';
 const profile = {
   issueTypes: { planning: ['10'], milestone: ['20'], epic: ['30'] },
-  fields: {},
-  progress: { enabled: false, linkTypeIds: [], direction: 'both', inProgressWeight: 0.5 },
+  fields: { role: 'cf_role' },
+  progress: { enabled: true, linkTypeIds: ['40'], direction: 'both', inProgressWeight: 0.5 },
   highlightRule: null,
   calendar: { holidays: [], workdays: [] },
 };
@@ -74,6 +74,8 @@ function start({ body = fixture, searchByKeys = allPlanning } = {}) {
     JptCalendar: require('../calendar.js'),
     JptDates: require('../timeline_dates.js'),
     JptGeometry: require('../timeline_geometry.js'),
+    JptModel: require('../timeline_model.js'),
+    JptPage: require('../page_bridge.js').create(),
     JptTimeline: require('../timeline_adapter.js'),
     JptI18n: require('../i18n.js').forLocale('en'),
     JiraApi: { maxBatch: 50, searchByKeys, sleep: async () => {} },
@@ -169,4 +171,74 @@ test('after the extension goes away nothing it added is left on the page', async
     [...page.doc.documentElement.style].filter((p) => p.startsWith('--jpt-')),
     [],
   );
+});
+
+const hoverFirstBar = async (page) => {
+  const bar = page.doc.querySelector(page.win.JptTimeline.SEL.BAR);
+  bar.dispatchEvent(new page.win.MouseEvent('mouseover', { bubbles: true }));
+  await page.settle();
+  return page.doc.getElementById('jpt-hover-tip');
+};
+
+test('the hover card lists the roles of a planning task as text, never as markup', async () => {
+  const roles = ['<img src=x onerror=alert(1)>', 'QA'];
+  const page = start({
+    searchByKeys: async (keys) => keys.map((key) => ({ key, fields: { issuetype: { id: '10' }, cf_role: roles } })),
+  });
+  await page.settle();
+  const tip = await hoverFirstBar(page);
+  assert.equal(tip.style.display, 'block');
+  assert.deepEqual(
+    [...tip.querySelectorAll('.jpt-tip-role-chip')].map((chip) => chip.textContent),
+    roles,
+  );
+  assert.equal(tip.querySelector('img'), null);
+});
+
+test('the hover card lists the linked issues of a milestone; summaries stay text and only same-site icons load', async () => {
+  const peer = (key, summary, iconUrl) => ({
+    type: { id: '40' },
+    outwardIssue: {
+      id: key,
+      key,
+      fields: { summary, status: { statusCategory: { key: 'done' } }, issuetype: { name: 'Task', iconUrl } },
+    },
+  });
+  const links = [
+    peer('DEMO-90', '<b>bold</b>', 'https://demo.atlassian.net/icon.png'),
+    peer('DEMO-91', 'plain', 'https://elsewhere.example/icon.png'),
+  ];
+  const page = start({
+    searchByKeys: async (keys) =>
+      keys.map((key) => ({
+        key,
+        fields: { issuetype: { id: '20' }, issuelinks: key.startsWith('DEMO-9') ? [] : links },
+      })),
+  });
+  await page.settle();
+  const tip = await hoverFirstBar(page);
+  assert.match(tip.querySelector('.jpt-tip-header').textContent, /2/);
+  assert.deepEqual(
+    [...tip.querySelectorAll('.jpt-tip-summary')].map((s) => s.textContent),
+    ['<b>bold</b>', 'plain'],
+  );
+  assert.equal(tip.querySelector('b'), null);
+  assert.deepEqual(
+    [...tip.querySelectorAll('img')].map((img) => img.getAttribute('src')),
+    ['https://demo.atlassian.net/icon.png'],
+  );
+});
+
+test('a Jira error keeps the project and source; leaving the Timeline clears them', async () => {
+  const failing = start({ searchByKeys: async () => Promise.reject(Object.assign(new Error('x'), { status: 503 })) });
+  await failing.settle();
+  const partial = failing.status();
+  assert.equal(partial.state, 'partial');
+  assert.equal(partial.source, 'property');
+  assert.equal(partial.projectId, '1');
+  failing.win.history.pushState({}, '', '/jira/your-work');
+  const left = await failing.recheck();
+  assert.equal(left.state, 'unsupported');
+  assert.equal(left.projectId, null);
+  assert.equal(left.source ?? null, null);
 });

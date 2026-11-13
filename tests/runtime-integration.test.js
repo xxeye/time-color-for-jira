@@ -84,6 +84,7 @@ test('runtime installs safe status receiver and stays inert without matching tim
       getProjectKey: () => null,
     },
     JiraApi: {},
+    JptPage: require('../page_bridge.js').create(),
   };
   context.window = context;
   context.globalThis = context;
