@@ -4,13 +4,42 @@
   else root.JptTimeline = api;
 })(globalThis, function () {
   'use strict';
-  const SEL_KEY = '[data-testid="native-issue-table.common.ui.issue-cells.issue-key.issue-key-cell"]';
-  const SEL_ROOT = '[data-testid="software-board.timeline"]';
-  // Jira dropped the "timeline." prefix in late 2026; keep both forms.
-  const SEL_OVERLAY = '[data-testid="timeline.chart-overlays.container"], [data-testid="chart-overlays.container"]';
+  // Jira DOM selectors live here, so a Jira markup change is fixed in one place. Exception: the date-header
+  // parsing in timeline_geometry.js keeps its own header selectors next to the code that reads them.
+  // "fixture" = present in tests/fixtures/timeline.html (captured 2026-11-13) and covered by tests/timeline-dom.test.js;
+  // the others were last confirmed by hand on a live Timeline on the date given.
+  const SEL = Object.freeze({
+    // Issue key cell in the left column; finds the Timeline table and each row's key. fixture
+    KEY: '[data-testid="native-issue-table.common.ui.issue-cells.issue-key.issue-key-cell"]',
+    // Gantt bar; testid ends with "issue/<numeric id>-container" (the middle is a cloud ARI). fixture
+    BAR: '[data-testid*="draggable-bar-"][data-testid$="-container"]',
+    // Horizontal scroller around the table and chart; arrow keys scroll it. fixture
+    SCROLLER: '[data-testid="scroll-container.scroll-container"]',
+    // Chart overlay layer where holiday strips are drawn. Jira dropped the "timeline." prefix in late 2026;
+    // the unprefixed form is in the fixture, the prefixed one is kept for older pages.
+    OVERLAY: '[data-testid="timeline.chart-overlays.container"], [data-testid="chart-overlays.container"]',
+    // One column per week/month/quarter; the opaque one is the current-period highlight. fixture
+    COLUMN_OVERLAY: '[data-testid^="timeline.chart-overlays.columns-overlay.column-"]',
+    // Timeline page markers when the URL does not say "timeline". 2026-11 (1.1.2)
+    ROOT: '[data-testid="software-board.timeline"], [data-testid^="aais-timeline-toolbar."]',
+    // Week/Month/Quarter switcher: selected radio in the menu, or the toolbar buttons. 2026-11 (1.1.2)
+    MODE_RADIO: '[role="radio"][aria-checked="true"]',
+    MODE_BUTTON: '[data-testid="aais-timeline-toolbar.ui.timeline-mode-switcher.expand-button"]',
+  });
   function getTable(doc) {
-    return doc.querySelector(SEL_KEY)?.closest('table') || null;
+    return doc.querySelector(SEL.KEY)?.closest('table') || null;
   }
+  const getRows = (table) => (table ? [...table.querySelectorAll('tbody tr')] : []);
+  const getRowKey = (row) => row.querySelector(SEL.KEY)?.textContent?.trim() || null;
+  // Rows without dates have no bar, so no id; those are not colored.
+  const getRowBar = (row) => row.querySelector(SEL.BAR);
+  const closestBar = (node) => node?.closest?.(SEL.BAR) || null;
+  function issueIdOfBar(bar) {
+    const m = (bar?.getAttribute('data-testid') || '').match(/issue\/(\d+)-container$/);
+    return m ? m[1] : null;
+  }
+  const findBar = (doc, id) => (/^\d+$/.test(id) ? doc.querySelector(`[data-testid$="issue/${id}-container"]`) : null);
+  const getScroller = (doc) => doc.querySelector(SEL.SCROLLER);
   function getProjectKey(location) {
     const match = (location.pathname || '').match(/\/(?:projects|project-config)\/([A-Za-z][A-Za-z0-9_]*|\d+)(?:\/|$)/);
     if (match) return match[1];
@@ -30,22 +59,36 @@
       /(?:^|\/)timeline(?:\/|$)/.test(location.pathname || '') ||
       new URLSearchParams(location.search || '').has('timeline') ||
       /(?:^#|\/)timeline(?:[/?=&]|$)/.test(location.hash || '') ||
-      !!doc.querySelector(`${SEL_ROOT}, [data-testid^="aais-timeline-toolbar."]`)
+      !!doc.querySelector(SEL.ROOT)
     );
   }
   function getOverlay(table) {
     if (!table) return null;
-    const scope = table.closest('[data-testid="scroll-container.scroll-container"]') || table.parentElement;
-    const explicit = scope?.querySelector(SEL_OVERLAY);
+    const scope = table.closest(SEL.SCROLLER) || table.parentElement;
+    const explicit = scope?.querySelector(SEL.OVERLAY);
     if (explicit && !table.contains(explicit)) return explicit;
     const candidates = [
       ...new Set(
-        [...scope.querySelectorAll('[data-testid^="timeline.chart-overlays.columns-overlay.column-"]')]
+        [...scope.querySelectorAll(SEL.COLUMN_OVERLAY)]
           .filter((el) => !table.contains(el) && el.getBoundingClientRect().height > 40)
           .map((el) => el.parentElement),
       ),
     ];
     return candidates.length === 1 ? candidates[0] : null;
   }
-  return Object.freeze({ SEL_KEY, getTable, getProjectKey, isJiraApp, isTimelinePage, getOverlay });
+  return Object.freeze({
+    SEL,
+    getTable,
+    getRows,
+    getRowKey,
+    getRowBar,
+    closestBar,
+    issueIdOfBar,
+    findBar,
+    getScroller,
+    getProjectKey,
+    isJiraApp,
+    isTimelinePage,
+    getOverlay,
+  });
 });

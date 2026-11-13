@@ -125,6 +125,7 @@
   "statusCantCheck": { "message": "Can't check Jira right now. Please try again later" },
   "statusAccessChanged": { "message": "Your Jira sign-in or permissions changed. Please check again" },
   "statusPartialData": { "message": "Some data can't be loaded right now. Please check again later" },
+  "statusNoIssueRows": { "message": "No issues found on this Timeline. If you can see issues, Jira may have changed its page. Please report it on GitHub" },
   "progressTitleWip": { "message": "{done} done + {wip} in progress (weight {weight}) / {total} total = {pct}%" },
   "progressTitle": { "message": "{done} done / {total} total = {pct}%" },
   "progressTitleDue": { "message": "Due date: {date}" },
