@@ -93,7 +93,7 @@ node --test --test-isolation=none tests/*.test.js
 python -m unittest discover -s tests -p "test_*.py"
 ```
 
-`tests/browser-smoke.cjs` 會用真的瀏覽器載入插件測試，需要另外安裝 [Playwright](https://playwright.dev/)。
+第一次先跑 `npm install` 安裝開發用的 jsdom。`tests/timeline-dom.test.js` 用 `tests/fixtures/timeline.html`（去識別的真實 Timeline）檢查 Jira DOM 查找；Jira 改版時重新擷取這份檔案。位置、大小等排版在 Jira 上手動確認。
 
 ### 打包
 
