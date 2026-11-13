@@ -234,3 +234,9 @@ test('total sync byte quota rejects a valid profile without writing its checkpoi
   assert.deepEqual(ch.local['jpt:restore'], checkpoint);
   assert.equal((await call(b, 'getAll')).value.config.sites['https://beta.atlassian.net'], undefined);
 });
+test('worker routing accepts only known settings messages', () => {
+  const { accepts } = require('../settings_broker.js');
+  for (const type of ['jpt:getContext', 'jpt:savePosition', 'jpt:refresh']) assert.equal(accepts({ type }), true, type);
+  for (const message of [null, {}, { type: 1 }, { type: 'getContext' }, { type: 'jpt:unknown' }, { type: 'jpt:toString' }])
+    assert.equal(accepts(message), false, JSON.stringify(message));
+});

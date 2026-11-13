@@ -23,9 +23,9 @@
 })(globalThis, function (root) {
   'use strict';
   const t = (key, params) => (root.JptI18n || require('./i18n.js').forLocale()).t(key, params);
-  const DEFAULT_POS = { side: 'right', ratio: 0.92 };
-  const validPosition = (p) =>
-    p && (p.side === 'right' || p.side === 'top') && Number.isFinite(p.ratio) && p.ratio >= 0 && p.ratio <= 1;
+  const S = root.JptSettings || require('./settings.js');
+  const DEFAULT_POS = S.DEFAULT_POSITION;
+  const validPosition = S.validatePosition;
   const clamp = (v) => Math.max(0, Math.min(1, v));
   const TOOLBAR_STYLE = `
     #jpt-toolbar {position:fixed;z-index:9998;display:inline-flex;align-items:stretch;max-width:calc(100vw - 16px);background:var(--ds-surface-raised,#2C333A);border:1px solid var(--ds-border,#596773);border-radius:3px;font-family:'Atlassian Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;font-weight:500;color:var(--ds-text,#B6C2CF);user-select:none;overflow:visible}

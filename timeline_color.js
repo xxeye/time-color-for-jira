@@ -18,6 +18,21 @@
   if (!JptTimeline.isJiraApp(location)) return;
   const DEBUG = false;
   const DEFAULTS = JptSettings.DEFAULTS;
+  // ─── 時間參數（毫秒）──────
+  const DATA_TTL_MS = 300000; // 議題日期、進度快取
+  const TYPE_TTL_MS = 3600000; // 議題類型快取
+  const MISSING_ISSUE_TTL_MS = 60000; // 查不到的議題先當 other，避免一直重查
+  const FETCH_BACKOFF_MS = 60000; // API 失敗後暫停抓取
+  const BATCH_PAUSE_MS = 120; // 分批抓取之間的間隔
+  const SCAN_DELAY_MS = 300; // DOM 變動後合併成一次掃描
+  const SCAN_RETRY_MS = 1500; // 頁面還沒渲染出列時，延遲重試
+  const RESCAN_AFTER_DRAG_MS = 1500; // 拖拉後等 Jira 存好日期再重掃
+  const STRIP_REDRAW_DELAY_MS = 200; // 假日條紋重畫的合併延遲
+  const SETTINGS_RELOAD_DELAY_MS = 350; // 設定變更通知的合併延遲
+  const LAZY_FETCH_DELAY_MS = 400; // 滑鼠停留超過才補抓 Milestone 關聯任務，掃過不打 API
+  const HOVER_HIDE_DELAY_MS = 150; // 滑鼠離開後收起懸停卡片
+  const ROUTE_POLL_MS = 750; // 偵測網址與 Timeline 表格是否換掉
+  const CACHE_PURGE_MS = 30000; // 定期清掉過期快取
   let settings = { ...DEFAULTS, enabled: false },
     profile = null;
   let active = false,
@@ -94,8 +109,7 @@
   const findBarById = (id) => document.querySelector(`[data-testid$="issue/${id}-container"]`);
 
   // Only bounded, short-lived memory. No issue data is written into browser storage.
-  const DATA_TTL_MS = 300000;
-  const typeCache = new JptCache.MemoryCache({ ttl: 3600000, max: 1000 });
+  const typeCache = new JptCache.MemoryCache({ ttl: TYPE_TTL_MS, max: 1000 });
   const dataCache = new JptCache.MemoryCache({ ttl: DATA_TTL_MS, max: 1000 });
   const detailCache = new JptCache.MemoryCache({ ttl: DATA_TTL_MS, max: 200 });
   const getData = (key) => ({ ...dataCache.get(key), ...detailCache.get(key) });
@@ -335,7 +349,7 @@
     reloadTimer = setTimeout(() => {
       reloadTimer = null;
       void loadSettings();
-    }, 350);
+    }, SETTINGS_RELOAD_DELAY_MS);
   };
 
   // ─── 抽 ID / Key ────────────────────────────────────
@@ -354,14 +368,10 @@
     return 'jpt-ms-progress-zero';
   };
 
-  const formatDueMonthDay = (iso) => {
-    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
-    return m ? `${Number(m[2])}/${Number(m[3])}` : '';
-  };
 
   const renderProgressBadge = (bar, progress, dueDate) => {
     const existing = bar.querySelector(`:scope > .${PROGRESS_CLASS}`);
-    const dueText = formatDueMonthDay(dueDate);
+    const dueText = JptCalendar.monthDay(dueDate);
     // 完成度與 Due date 各自可顯示；兩者都沒有或設定關閉才清掉 badge。
     const hasProgress =
       progress &&
@@ -408,10 +418,6 @@
   // 之前無條件 remove(...ALL_CLASSES) + add 會在新一輪掃描期間短暫露出 Jira
   // 預設樣式（捲動時尤其明顯），現在 class 沒變就完全不寫入。
   // badge 透過 renderProgressBadge 冪等處理（只在內容改變時才動 DOM）。
-  const parseDateOnlyMs = (value) => {
-    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(value || '');
-    return m ? Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : NaN;
-  };
 
   const renderPtTargetEndShade = (bar, data) => {
     const clear = () => {
@@ -422,9 +428,9 @@
       clear();
       return;
     }
-    const start = parseDateOnlyMs(data.startDate);
-    const target = parseDateOnlyMs(data.targetEndDate);
-    const due = parseDateOnlyMs(data.dueDate);
+    const start = JptCalendar.dateOnlyMs(data.startDate);
+    const target = JptCalendar.dateOnlyMs(data.targetEndDate);
+    const due = JptCalendar.dateOnlyMs(data.dueDate);
     if (![start, target, due].every(Number.isFinite) || !(start <= target && target <= due)) {
       clear();
       return;
@@ -513,12 +519,11 @@
   // Epic 高亮欄位可能是 string / 單選 object / 多選 array — 容錯三種形式
   const isEpicHighlightOn = (raw) => JptRules.highlight(raw, profile?.highlightRule);
 
-  const BATCH_SIZE = 50;
+  const BATCH_SIZE = JiraApi.maxBatch;
   // API 持續失敗（session 過期 401 / infra 5xx）時的退避 — 沒有這個的話，
   // 失敗的 key 不會進 cache，needsFetch 永遠 true，MutationObserver → scheduleScan
   // 會每 300ms 重發同一批失敗請求無限重打
   let fetchBackoffUntil = 0;
-  const FETCH_BACKOFF_MS = 60000;
   const fetchTypes = async (keys) => {
     if (!isActive() || !keys.length || Date.now() < fetchBackoffUntil) return;
     const epoch = generation,
@@ -558,8 +563,8 @@
       }
       for (const key of keys)
         if (!seen.has(key)) {
-          typeCache.set(key, 'other', 60000);
-          dataCache.set(key, { progress: null, relates: [], roles: [], ts: Date.now() }, 60000);
+          typeCache.set(key, 'other', MISSING_ISSUE_TTL_MS);
+          dataCache.set(key, { progress: null, relates: [], roles: [], ts: Date.now() }, MISSING_ISSUE_TTL_MS);
         }
       fetchBackoffUntil = 0;
     } catch (error) {
@@ -589,7 +594,7 @@
     scanTimer = setTimeout(async () => {
       scanTimer = null;
       await scan();
-    }, 300);
+    }, SCAN_DELAY_MS);
   };
 
   const scan = async () => {
@@ -603,7 +608,7 @@
           scanRetryTimer = null;
           scheduleScan();
           drawHolidayStrips();
-        }, 1500);
+        }, SCAN_RETRY_MS);
       }
       return;
     }
@@ -643,7 +648,7 @@
         const id = idByKey.get(k);
         if (id) applyColor(id, k);
       }
-      if (i + BATCH_SIZE < unknown.length) await JiraApi.sleep(120).catch(() => {});
+      if (i + BATCH_SIZE < unknown.length) await JiraApi.sleep(BATCH_PAUSE_MS).catch(() => {});
     }
   };
 
@@ -660,7 +665,6 @@
   let hoverTipEl = null;
   let hoverTipHideTimer = null;
   let lazyFetchTimer = null; // Milestone hover 補抓 peer 起訖日的 debounce timer
-  const LAZY_FETCH_DELAY_MS = 400; // 滑鼠停留 > 400ms 才打 API 補抓（避免滑鼠掃過大量 milestone 連續打 API）
 
   const STATUS_ICON = { done: '✓', indeterminate: '◐', new: '○' };
 
@@ -687,13 +691,7 @@
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
 
-  // 'YYYY-MM-DD' → 'M/D'；空值回 '-'
-  const fmtMonthDay = (iso) => {
-    if (!iso) return '-';
-    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
-    if (!m) return '-';
-    return `${parseInt(m[2], 10)}/${parseInt(m[3], 10)}`;
-  };
+  const fmtMonthDay = (iso) => JptCalendar.monthDay(iso, '-');
   // 「起 ~ 訖」字串；任一沒填補 '-'，都沒填顯示 '- ~ -'
   const fmtDateRange = (start, due) => `${fmtMonthDay(start)} ~ ${fmtMonthDay(due)}`;
 
@@ -836,7 +834,7 @@
       hoverTipEl.style.display = 'none';
       hoverTipEl.textContent = '';
       hoverTipBar = null;
-    }, 150);
+    }, HOVER_HIDE_DELAY_MS);
   };
 
   // 砍掉 Milestone 結束日標籤的「(N 天)」時長後綴 — 時間點不需顯示時長
@@ -849,11 +847,8 @@
   //
   // 起訖日來源依序：已存的起訖日（快取）→ bar 內的日期標籤 → 拖拉中用刻度換算拖動距離。
   // 工作天 = 起訖區間內扣掉週末、假日，加回補班日（JptCalendar.countWorkingDays）。
-  const ymdStr = (d) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
   const countWorkingDays = (start, end) =>
-    JptCalendar.countWorkingDays(ymdStr(start), ymdStr(end), calendarInfo);
+    JptCalendar.countWorkingDays(JptCalendar.localYmd(start), JptCalendar.localYmd(end), calendarInfo);
 
   const computeBarDayRange = (bar) => {
     const key = idToKey.get(extractIssueIdFromBar(bar)),
@@ -1088,7 +1083,7 @@
       detailCache.delete(key);
       if (DEBUG) console.log('[jpt] invalidated cache after drag:', key);
       // 給 Jira 一點時間把 PUT request 送出去 + 回來
-      setTimeout(() => scheduleScan(), 1500);
+      setTimeout(() => scheduleScan(), RESCAN_AFTER_DRAG_MS);
     },
     true,
   );
@@ -1160,7 +1155,7 @@
     stripTimer = setTimeout(() => {
       stripTimer = null;
       drawHolidayStrips();
-    }, 200);
+    }, STRIP_REDRAW_DELAY_MS);
   };
   const onMutation = (mutations) => {
     if (
@@ -1415,13 +1410,13 @@
         onMutation();
       } else if (isActive() && getTimelineTable() && !document.body.classList.contains('jpt-active'))
         updateActivation();
-    }, 750);
+    }, ROUTE_POLL_MS);
     purgeTimer = setInterval(() => {
       typeCache.purge();
       dataCache.purge();
       detailCache.purge();
       if (hoverTipBar && !detailCache.has(idToKey.get(extractIssueIdFromBar(hoverTipBar)))) hideHoverTip();
-    }, 30000);
+    }, CACHE_PURGE_MS);
     await loadSettings();
   };
 

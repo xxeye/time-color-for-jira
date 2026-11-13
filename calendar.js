@@ -32,7 +32,23 @@
     }
     return { days, complete };
   }
-  const api = { parseDate, dayInfo, kindOf, countWorkingDays };
+  // Small display helpers. They read only the leading YYYY-MM-DD, so Jira datetimes work too,
+  // and they do not reject impossible dates the way parseDate does.
+  const LEADING_DATE = /^(\d{4})-(\d{2})-(\d{2})/;
+  // '2026-05-21' -> '5/21'; anything else -> fallback.
+  function monthDay(value, fallback = '') {
+    const m = LEADING_DATE.exec(value || '');
+    return m ? `${Number(m[2])}/${Number(m[3])}` : fallback;
+  }
+  // UTC midnight of the leading date (overflowing days roll over, e.g. 02-30 -> 03-02); NaN when absent.
+  function dateOnlyMs(value) {
+    const m = LEADING_DATE.exec(value || '');
+    return m ? Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : NaN;
+  }
+  // Local calendar date of a Date object as YYYY-MM-DD (not UTC, unlike toISOString).
+  const localYmd = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const api = { parseDate, dayInfo, kindOf, countWorkingDays, monthDay, dateOnlyMs, localYmd };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.JptCalendar = api;
 })(globalThis);
