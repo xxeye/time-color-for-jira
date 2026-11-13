@@ -134,7 +134,7 @@ test('API respects Retry-After and never retries permission errors', async () =>
     },
   });
   await assert.rejects(
-    () => forbidden.getIssue('DEMO-1'),
+    () => forbidden.getMyself(),
     (e) => e.status === 403,
   );
   assert.equal(count, 1);

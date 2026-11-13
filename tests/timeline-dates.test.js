@@ -21,30 +21,31 @@ test('label dates flatten rolled-up and separate bar labels in order', () => {
   assert.deepEqual(D.parseLabelDates(['2026-09-28']), ['2026-09-28']);
 });
 
-test('label dates drop the duration suffix, unsupported separators and unknown formats', () => {
-  assert.deepEqual(D.parseLabelDates(['Jun 22, 2026 (+17 天)']), ['2026-06-22']);
-  assert.deepEqual(D.parseLabelDates(['Sep 28, 2026 - Dec 11, 2026 (+17 天)']), ['2026-09-28', '2026-12-11']);
-  for (const labels of [['28/09/2026'], ['2026-09-28 — 2026-12-11'], [''], []]) {
-    assert.deepEqual(D.parseLabelDates(labels), []);
-  }
-  assert.deepEqual(D.parseLabelDates(['Sep 28, 2026 - 2026-13-45']), ['2026-09-28']);
-  assert.deepEqual(D.parseLabelDates(null), []);
-  assert.deepEqual(D.parseLabelDates('Sep 28, 2026'), []);
-});
-
-test('label dates handle negative deltas, one-sided separators, partial ranges and non-strings', () => {
-  assert.deepEqual(D.parseLabelDates(['Jun 22, 2026 (-3 天)']), ['2026-06-22']);
-  // A dash needs whitespace on both sides to split; otherwise the whole label fails to parse.
-  assert.deepEqual(D.parseLabelDates(['Sep 28, 2026- Dec 11, 2026']), []);
-  assert.deepEqual(D.parseLabelDates(['Sep 28, 2026 -Dec 11, 2026']), []);
-  // An unparsable left side is dropped while the valid right side is kept.
-  assert.deepEqual(D.parseLabelDates(['Sep 28 2026 - Dec 11, 2026']), ['2026-12-11']);
-  assert.deepEqual(D.parseLabelDates(['Sep 28, 2026', 42, null, 'Dec 11, 2026']), ['2026-09-28', '2026-12-11']);
-});
-
-test('label dates keep the given order without validating range or duplicates', () => {
-  assert.deepEqual(D.parseLabelDates(['Dec 11, 2026 - Sep 28, 2026']), ['2026-12-11', '2026-09-28']);
-  assert.deepEqual(D.parseLabelDates(['Sep 28, 2026', 'Sep 28, 2026']), ['2026-09-28', '2026-09-28']);
+test('label dates: suffixes, separators, partial ranges, order and non-strings', () => {
+  const cases = [
+    // duration suffix is dropped
+    [['Jun 22, 2026 (+17 天)'], ['2026-06-22']],
+    [['Jun 22, 2026 (-3 天)'], ['2026-06-22']],
+    [['Sep 28, 2026 - Dec 11, 2026 (+17 天)'], ['2026-09-28', '2026-12-11']],
+    // unknown formats, unsupported separators, empty input
+    [['28/09/2026'], []],
+    [['2026-09-28 — 2026-12-11'], []],
+    [[''], []],
+    [[], []],
+    [null, []],
+    ['Sep 28, 2026', []],
+    // a dash needs whitespace on both sides to split; otherwise the whole label fails
+    [['Sep 28, 2026- Dec 11, 2026'], []],
+    [['Sep 28, 2026 -Dec 11, 2026'], []],
+    // an unparsable side is dropped, the valid side is kept
+    [['Sep 28, 2026 - 2026-13-45'], ['2026-09-28']],
+    [['Sep 28 2026 - Dec 11, 2026'], ['2026-12-11']],
+    [['Sep 28, 2026', 42, null, 'Dec 11, 2026'], ['2026-09-28', '2026-12-11']],
+    // given order is kept; range and duplicates are not validated
+    [['Dec 11, 2026 - Sep 28, 2026'], ['2026-12-11', '2026-09-28']],
+    [['Sep 28, 2026', 'Sep 28, 2026'], ['2026-09-28', '2026-09-28']],
+  ];
+  for (const [input, expected] of cases) assert.deepEqual(D.parseLabelDates(input), expected, JSON.stringify(input));
 });
 
 test('month labels use explicit year or a required reference without current-time guesses', () => {

@@ -166,27 +166,17 @@ body.jpt-active .dependencies-overlay path[data-testid$=".line.interactive-path"
   outline-offset: -2px !important;
 }
 
-/* 隱藏 Jira Timeline 當月份高亮欄（保留今天藍線 today-marker）
- * 2026-08 改版前：Jira 用 ._1kl7ia51._1s7zia51 這組雜湊 class 標記目前月份的
- * column overlay，寫死在 CSS 裡。
- * 2026-08 改版後：雜湊 class 已經失效，且哪一欄是「目前時段」是動態的，沒辦法
- * 再用靜態選擇器表達。改成 timeline_color.js 的 applyCurrentPeriodHide() 動態
- * 找到目前高亮的欄位（[data-testid^="timeline.chart-overlays.columns-overlay.
- * column-"] 裡背景不透明的那個），直接在該元素上加這個 class。
- */
+/* 隱藏目前時段的高亮欄（保留今天藍線）；由 timeline_color.js 的 applyCurrentPeriodHide() 加上 class */
 .jpt-current-period-hidden {
   background: transparent !important;
 }
 
-/* 隱藏左欄 issue key（如 ABC-1234）— 不影響任務名 / Epic 圖示
- * 2026-08 改版：testid 從 roadmap.timeline-table-kit.ui.list-item-content.
- * summary.key 換成 native-issue-table.common.ui.issue-cells.issue-key.issue-key-cell
- */
+/* 隱藏左欄 issue key（如 ABC-1234）— 不影響任務名 / Epic 圖示 */
 body.jpt-hide-issue-key [data-testid="native-issue-table.common.ui.issue-cells.issue-key.issue-key-cell"] {
   display: none !important;
 }
 
-/* 週末 / 國定假日 strip — 由 timeline_color.js 動態插入到 today-marker 的 parent
+/* 週末 / 國定假日 strip — 由 timeline_color.js 動態插入到圖表欄位 overlay（JptTimeline.getOverlay）
  * 用 absolute 定位 + pointer-events:none，不影響 Jira 互動。
  */
 .jpt-cal-strip {

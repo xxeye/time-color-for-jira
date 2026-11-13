@@ -1,9 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const path = require('node:path');
 const modulePath = path.join(__dirname, '../config-generator/generator.js');
-test('generator module is present', () => assert.ok(fs.existsSync(modulePath)));
 test('normalization, strict validation and lossless single profile edit', () => {
   const G = require(modulePath),
     S = require('../settings.js');

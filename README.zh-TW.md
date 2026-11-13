@@ -77,7 +77,7 @@ Jira 的任務資料只在使用者的瀏覽器裡使用，不會傳給開發者
 | `background.js`、`settings_broker.js` | Service worker：設定儲存 |
 | `timeline_color.js`、`timeline_*.js`、`floating_toolbar.js` | 注入 Jira Timeline 的畫面處理 |
 | `jiraApi.js`、`runtime_session.js`、`issue_*.js` | 讀取 Jira 資料（同站台、唯讀） |
-| `settings.js`、`architecture_template.js` | 設定檔格式與驗證 |
+| `settings.js` | 設定檔格式與驗證 |
 | `popup.*`、`options.*`、`ui_helpers.js` | 擴充功能面板與設定頁 |
 | `config-generator/` | 管理員設定檔產生器（打包時放進設定頁） |
 | `tests/` | 自動測試 |

@@ -64,8 +64,6 @@
   "configUnreadable": { "message": "Couldn't read the JSON. Choose the configuration file from your admin again." },
   "configIncompatible": { "message": "This configuration file can't be used. Get a compatible version. {detail}" },
   "configEmpty": { "message": "This configuration file has no sites or projects to apply. Ask your admin for a complete file." },
-  "targetProject": { "message": "Project {id}" },
-  "targetSiteDefault": { "message": "Site default" },
 
   "vConfigInvalid": { "message": "The configuration format or size is invalid." },
   "vObjectRequired": { "message": "A settings object is required." },

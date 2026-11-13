@@ -59,23 +59,3 @@ test('Confluence pages are not treated as the Jira app', () => {
   assert.equal(A.isJiraApp(new URL('https://example.atlassian.net/jira/your-work')), true);
   assert.equal(A.isJiraApp(new URL('https://example.atlassian.net/wikipedia')), true);
 });
-test('today marker search is scoped and declines ambiguous candidates', () => {
-  assert.equal(typeof A.findTodayMarker, 'function');
-  const marker = () => ({
-    getBoundingClientRect: () => ({ width: 2, height: 400, top: 10, bottom: 410, left: 50, right: 52 }),
-  });
-  const first = marker(),
-    second = marker();
-  let candidates = [first];
-  const scope = { querySelectorAll: () => candidates };
-  const table = { closest: () => scope, getBoundingClientRect: () => ({ top: 0, bottom: 500, left: 0, right: 800 }) };
-  const doc = {
-    querySelectorAll: () => {
-      throw Error('must not scan document');
-    },
-  };
-  assert.equal(A.findTodayMarker(doc, table), first);
-  candidates = [first, second];
-  assert.equal(A.findTodayMarker(doc, table), null);
-  assert.equal(A.findTodayMarker(doc, null), null);
-});
