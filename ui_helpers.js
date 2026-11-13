@@ -76,17 +76,6 @@
       throw Error(t('configEmpty'));
     return result.value;
   }
-  function fillTargets(select, config) {
-    select.replaceChildren();
-    for (const [origin, site] of Object.entries(config.sites)) {
-      for (const project of [...(site.defaults ? [''] : []), ...Object.keys(site.projects)]) {
-        const option = select.ownerDocument.createElement('option');
-        option.value = JSON.stringify([origin, project]);
-        option.textContent = origin + ' · ' + (project ? t('targetProject', { id: project }) : t('targetSiteDefault'));
-        select.append(option);
-      }
-    }
-  }
   // [2025, 2026, 2027, 2029] -> '2025–2027, 2029'
   function yearRanges(years) {
     const groups = [];
@@ -126,7 +115,6 @@
     tabStatus,
     renderStatus,
     readConfig,
-    fillTargets,
     download,
     yearRanges,
     sourceText,

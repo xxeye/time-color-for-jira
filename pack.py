@@ -14,7 +14,7 @@ FILES = (
     'onboarding.html', 'onboarding.js', 'onboarding.css',
     'options.html', 'options.js', 'options_tabs.js', 'options.css',
     'i18n.js', '_locales/en/messages.json', '_locales/zh_TW/messages.json',
-    'generator.html', 'generator.js', 'generator.css', 'architecture_template.js',
+    'generator.html', 'generator.js', 'generator.css',
     'icons/icon16.png', 'icons/icon48.png', 'icons/icon128.png',
 )
 # The settings page embeds the admin generator; its sources live in config-generator/.

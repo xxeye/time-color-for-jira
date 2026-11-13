@@ -28,7 +28,6 @@
     PROPERTY_PROFILE_BYTES = 16000,
     MAX_HOLIDAYS = 300,
     MAX_WORKDAYS = 100;
-  const clone = (x) => JSON.parse(JSON.stringify(x));
   const object = (x) =>
     x !== null &&
     typeof x === 'object' &&

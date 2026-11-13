@@ -155,15 +155,7 @@ test('project property: accepted shape, size limit and invalid days', () => {
   const extra = S.validateProperty({ ...value, sites: {} });
   assert.equal(extra.ok, true);
   assert.deepEqual(extra.ignored, ['$.sites']);
-  const big = JSON.parse(JSON.stringify(value));
-  big.profile.calendar.holidays = Array.from({ length: 300 }, (_, i) => ({
-    date: new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10),
-    name: 'x'.repeat(50),
-  }));
-  assert.equal(S.validateProperty(big).ok, false);
-  const bad = JSON.parse(JSON.stringify(value));
-  bad.profile.calendar.holidays = [{ date: '2027-01-01', name: '<b>' }];
-  assert.equal(S.validateProperty(bad).ok, false);
+  // Size limits and holiday-name rules are covered by the shared contract fixture (project-property-contract.test.js).
 });
 test('drag locks are display settings: off by default, project value kept, personal choice wins', () => {
   assert.equal(S.DEFAULTS.ptLockDrag, false);

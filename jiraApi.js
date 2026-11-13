@@ -112,10 +112,6 @@
     return {
       searchByKeys,
       sleep,
-      getIssue: (k, fs = ['issuetype'], o = {}) =>
-        Promise.resolve().then(() =>
-          request(`/rest/api/3/issue/${encodeURIComponent(key(k))}?fields=${fields(fs).join(',')}`, null, o),
-        ),
       getFields: (o) => request('/rest/api/3/field', null, o),
       getTypes: (o) => request('/rest/api/3/issuetype', null, o),
       getLinkTypes: (o) => request('/rest/api/3/issueLinkType', null, o),

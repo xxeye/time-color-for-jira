@@ -78,7 +78,7 @@ No packages or build tools needed: plain JavaScript, HTML and CSS (Manifest V3).
 | `background.js`, `settings_broker.js` | Service worker: settings storage |
 | `timeline_color.js`, `timeline_*.js`, `floating_toolbar.js` | Content scripts drawing on the Jira Timeline |
 | `jiraApi.js`, `runtime_session.js`, `issue_*.js` | Reading Jira data (same site, read-only) |
-| `settings.js`, `architecture_template.js` | Configuration format and validation |
+| `settings.js` | Configuration format and validation |
 | `popup.*`, `options.*`, `ui_helpers.js` | Extension panel and settings page |
 | `config-generator/` | Configuration generator for admins (packed into the settings page) |
 | `tests/` | Automated tests |

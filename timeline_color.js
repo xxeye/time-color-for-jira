@@ -1,15 +1,12 @@
 // timeline_color.js
 // 在 Jira Timeline 把 Planning Task / Milestone 的時間軸條塊染色
 //
-// Jira Timeline DOM 結構（2026-08-26 改版後重新實測，取代 2026-05 那版）：
-//   一個 issue = 一張 <table> 裡的一個 <tr>；key/summary/status/assignee/甘特圖
-//   bar 全部是同一列的儲存格，不再有獨立的 list-item / chart-item 兩組虛擬列表
-//   靠數字 ID 互相對應——直接在同一個 <tr> 裡找就好，見 getTimelineRows() /
-//   extractIssueId() / extractIssueKey()。
+// Jira Timeline DOM 結構：
+//   一個 issue = <table> 裡的一個 <tr>；key、summary、甘特圖 bar 都是同一列的儲存格，
+//   見 getTimelineRows() / extractIssueId() / extractIssueKey()。
 //   key text: [data-testid="native-issue-table.common.ui.issue-cells.issue-key.issue-key-cell"]
 //   bar:      [data-testid*="draggable-bar-"][data-testid$="-container"]
 //             （testid 內容形如 ...draggable-bar-ari:cloud:jira:<uuid>:issue/<數字ID>-container）
-// 這次改版詳情、逐項選擇器對照表見同目錄 UI_MIGRATION_2026-08.md。
 //
 //   ptColor    Planning Task 顏色（預設 #6a9a23）
 //   msColor    Milestone 顏色（預設 #FF8B00）
@@ -75,16 +72,11 @@
   const TYPE_TO_CLASS = { planning: PT_CLASS, milestone: MS_CLASS };
   const EPIC_TYPE_NAMES = new Set(['epic']);
 
-  // ─── 選擇器（2026-08 Jira Timeline 改版後重新對應）──────
-  // 舊版：list-item / chart-item 各自帶數字 ID 的獨立 testid，靠 ID 互相對應。
-  // 新版：整個 Timeline 變成一張 <table>，一個 issue = 一個 <tr>，
-  //       key/summary/bar 都是同一個 <tr> 裡的儲存格，不再需要 ID 對應，
-  //       直接在同一列裡找就好。
+  // ─── 選擇器 ──────
   const SEL_KEY = '[data-testid="native-issue-table.common.ui.issue-cells.issue-key.issue-key-cell"]';
   const SEL_BAR_CONTAINER = '[data-testid*="draggable-bar-"][data-testid$="-container"]';
 
-  // 找目前 Timeline 用的那張 table：優先用 issue key cell 反查（最準），
-  // 找不到（頁面還沒渲染完）就退回抓頁面上第一張有 <thead> 的 table。
+  // Timeline 那張 table：由 issue key 儲存格往上找；頁面還沒渲染出 key 時回 null。
   const getTimelineTable = () => JptTimeline.getTable(document);
 
   const getTimelineRows = () => {
@@ -103,7 +95,6 @@
 
   // Only bounded, short-lived memory. No issue data is written into browser storage.
   const DATA_TTL_MS = 300000;
-  const TTL_JITTER_MS = 0;
   const typeCache = new JptCache.MemoryCache({ ttl: 3600000, max: 1000 });
   const dataCache = new JptCache.MemoryCache({ ttl: DATA_TTL_MS, max: 1000 });
   const detailCache = new JptCache.MemoryCache({ ttl: DATA_TTL_MS, max: 200 });
@@ -137,35 +128,13 @@
   // ─── 週末/假日 strip 渲染（universal：支援週/月/季 view）───
   const STRIP_CLASS = 'jpt-cal-strip';
 
-  // 2026-08 改版後這兩個 testid 都消失了，改用結構/幾何特徵抓：
-  //   header row → table 的 <thead><tr>，最後一個儲存格就是甘特圖表頭
-  //   （工作/狀態/受託人在前面幾格，甘特圖表頭固定是最後一個）
-  //   today marker → 全頁掃 <div>，找「窄（≤4px）+ 高（>300px）+ 實色背景」的
-  //   那個（原本的 testid 保護沒了，抓到後 cache 住，元素被移出 DOM 才重新掃，
-  //   避免每次呼叫都全頁掃一輪 div）
-  const getHeaderRow = () => {
-    const headerTr = getTimelineTable()?.querySelector('thead tr');
-    return headerTr ? headerTr.lastElementChild : null;
-  };
-
-  // ─── 隱藏「目前時段」高亮（2026-08 改版後重新對應）──────
-  // 舊版純 CSS 寫死雜湊 class：body.jpt-hide-current-month ._1kl7ia51._1s7zia51
-  // 新版沒有雜湊 class 可預先寫死了，但這次改版意外地讓這格「有 testid 了」：
-  // 一組 [data-testid^="timeline.chart-overlays.columns-overlay.column-N"]
-  // 裡，背景不透明的那一個就是目前高亮的月/週/季欄。用 JS 動態找到它，直接在
-  // 該元素上加 class 蓋掉背景（取代原本寫死選擇器的 CSS 規則）。
+  // ─── 隱藏「目前時段」高亮 ──────
+  // columns-overlay.column-N 裡背景不透明的那欄就是目前高亮的月／週／季，在它上面加 class 蓋掉背景。
+  // 同一個 column-N 會有兩份（<thead> 裡的殘影、table 外層真正整欄的那份），哪份不透明隨捲動變化，
+  // 所以每次檢查所有符合的節點，不能找到第一個就停。已加 class 的保留（加了之後背景透明，無法再判斷）；
+  // 停用或關閉設定時才全部清除。
   const SEL_COLUMN_OVERLAY = '[data-testid^="timeline.chart-overlays.columns-overlay.column-"]';
   const CURRENT_PERIOD_HIDE_CLASS = 'jpt-current-period-hidden';
-  // 實測發現：同一個 column-N testid 在 DOM 裡其實有「兩份」——一份活在
-  // <thead> 底下（尺寸只有 header cell 高，通常background transparent，
-  // 是虛擬化/複用機制留下的殘影節點）、另一份活在 table 外層的
-  // chart-overlays.container（真正貫穿 header+body 整欄高度的那個，才是
-  // 畫面上實際看得到的高亮）。哪一份「目前是非透明」會隨著虛擬化/捲動變化，
-  // 舊版「找到第一個非透明的就 break」的寫法，遇到捲動那個瞬間可能剛好抓到
-  // thead 那份短命的殘影，把 hide class 蓋在錯的節點上，結果真正畫在畫面上
-  // 的欄位反而沒被隱藏——使用者看到的就是「標頭那格看起來被處理過，但下面
-  // 整欄的高亮還在」。改成不 break、每次重新整理全部符合條件的節點，並且
-  // 每次都先清掉舊的 hide class 再重算，才不會被虛擬化的殘影節點誤導。
   const applyCurrentPeriodHide = () => {
     if (!isActive() || !settings.hideCurrentMonth) {
       document
@@ -182,10 +151,8 @@
     }
   };
 
-  // 舊版讀 URL ?timeline=WEEKS|MONTHS|QUARTERS；2026-08 改版後 URL 不再帶這個
-  // 參數（純前端 state，實測切視圖 URL 完全不變），改成讀「週/月/季」三顆切換
-  // 按鈕，找目前背景不透明（= 被選中）的那顆，用按鈕文字對應模式。
-  // 文字依站台語系而定，對照表在 timeline_dates.js 的 JptDates.modeFromLabel。
+  // 目前的週／月／季模式：URL 有帶 rangeMode／timeline 就用；否則讀切換按鈕的文字
+  // （依站台語系，對照表在 JptDates.modeFromLabel）。
   const SEL_MODE_SWITCHER_BUTTON = '[data-testid="aais-timeline-toolbar.ui.timeline-mode-switcher.expand-button"]';
   const getTimelineMode = () => {
     const params = new URLSearchParams(location.search);
@@ -287,8 +254,6 @@
     // 修飾鍵（除 Shift）放行給瀏覽器/Jira
     if (e.altKey || e.ctrlKey || e.metaKey) return;
 
-    // 舊 testid「sr-timeline」2026-08 改版後也消失了，實測新版捲動容器換成
-    // scroll-container.scroll-container。
     const scroller = document.querySelector('[data-testid="scroll-container.scroll-container"]');
     if (!scroller) return;
     // Only handle keys aimed at the Timeline itself or the page background; the side panel,
@@ -374,10 +339,7 @@
   };
 
   // ─── 抽 ID / Key ────────────────────────────────────
-  // row 現在就是 <tr>：key 直接在同一列裡找；id 則從同一列裡的 bar 反推
-  // （bar 不一定存在——例如任務沒填日期就不會有 bar，這時 id 會是 null，
-  //   跟舊版「這個 issue 沒東西可上色」的行為一致）。
-  // findBarById 定義移到檔案上方的選擇器區塊，跟 extractIssueIdFromBar 放一起。
+  // row 是 <tr>：key 在同一列找；id 從同一列的 bar 反推（沒填日期就沒有 bar，id 為 null，不上色）。
   const extractIssueId = (row) => extractIssueIdFromBar(row.querySelector(SEL_BAR_CONTAINER));
   const extractIssueKey = (row) => {
     const keyEl = row.querySelector(SEL_KEY);
@@ -412,7 +374,7 @@
       existing?.remove();
       return;
     }
-    // 分子 = 已開始的任務數（done + wip）；% 數仍以「進行中算半分」計算
+    // 分子 = 已完成數；% 依專案設定的進行中權重（0 或 0.5）計算，見 JptRules.computeProgress
     const progressText = hasProgress ? `${progress.done}/${progress.total} ${progress.pct}%` : '';
     const text = [progressText, dueText ? `DUE ${dueText}` : ''].filter(Boolean).join(' · ');
     const progressTitle = !hasProgress
@@ -504,21 +466,10 @@
     renderProgressBadge(bar, isMs ? data.progress : null, isMs ? data.dueDate : null);
   };
 
-  // ─── 全頁重渲染（settings 變動時呼叫）──────────────
-  const rerenderAll = () => {
-    if (!isActive()) return; // 防呆：停用時絕不上色
-    getTimelineRows().forEach((row) => {
-      const id = extractIssueId(row);
-      const key = extractIssueKey(row);
-      if (id && key) applyColor(id, key);
-    });
-  };
-
   // ─── 從 issuelinks 算 Milestone relates 完成度 ─────
   // Jira API 回的 issuelinks 直接帶 outwardIssue/inwardIssue.fields.status
   // 一次 batch fetch 就拿到所有資料，無需第二輪查。
-  // 「relates to」link 類型偵測：可能是 `Relates`、`01_Relates`（客製排序前綴）等。
-  // 用 regex 容錯，所有以「relates」結尾／開頭的 link type 都算。
+  // 只算專案設定指定的連結類型與方向（profile.progress.linkTypeIds／direction），見 JptRules.peers。
   const computeMsProgress = (links) => JptRules.computeProgress(links, profile);
 
   // 從 issuelinks 抽出 relates 任務清單（給 hover tooltip 用）
@@ -896,12 +847,8 @@
   //   靜態：「May 21, 2026 (8 天)」  → 8 天為總天數（含頭含尾）
   //   拖拉：「Jun 22, 2026 (+17 天)」→ 17 天為相對 delta
   //
-  // 我們不解析 label 文字日期（語系變動會壞），改用 bar 幾何對應 today-marker 算 day offset：
-  //   today-marker.offsetLeft（以及 BCR.left + 半寬）≈ 今天那欄的中央
-  //   bar.BCR.left  = 起始日欄中央（Jira 條塊 center-to-center 慣例）
-  //   bar.BCR.right = 結束日欄中央
-  //   day_offset = round((x - todayCenterX) / pxPerDay)
-  // 工作天 = start ~ end 區間內排除週六/日 + 訂閱假日的天數。
+  // 起訖日來源依序：已存的起訖日（快取）→ bar 內的日期標籤 → 拖拉中用刻度換算拖動距離。
+  // 工作天 = 起訖區間內扣掉週末、假日，加回補班日（JptCalendar.countWorkingDays）。
   const ymdStr = (d) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 

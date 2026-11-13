@@ -4,7 +4,6 @@
     module.exports = api;
     return;
   }
-  root.__jptIsTimelinePage = () => !!root.JptTimeline?.isTimelinePage(root.location, root.document);
   if (!root.JptClient || !root.JptTimeline || !root.JptTimeline.isJiraApp(root.location)) return;
   root.__jptToolbar?.destroy();
   root.__jptToolbar = api.createToolbar({

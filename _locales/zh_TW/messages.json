@@ -64,8 +64,6 @@
   "configUnreadable": { "message": "無法讀取 JSON，請重新選擇管理員提供的設定檔。" },
   "configIncompatible": { "message": "此設定檔目前無法使用，請取得相容版本。{detail}" },
   "configEmpty": { "message": "此設定檔沒有可套用的站台或專案，請向管理員取得完整設定。" },
-  "targetProject": { "message": "指定專案 {id}" },
-  "targetSiteDefault": { "message": "站台預設" },
 
   "vConfigInvalid": { "message": "設定格式或大小不合法。" },
   "vObjectRequired": { "message": "需要設定物件。" },

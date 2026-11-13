@@ -7,8 +7,6 @@ test('runtime cannot persist or expose task caches and has no tenant field defau
   const js = source();
   assert.doesNotMatch(js, /sessionStorage\.(setItem|getItem)|chrome\.storage|window\.__jptDebug\s*=/);
   assert.doesNotMatch(js, /customfield_\d+/);
-  assert.doesNotMatch(js, /stripDurationSuffix/);
-  assert.doesNotMatch(js, /persistDataCache\s*\(/);
 });
 test('runtime installs safe status receiver and stays inert without matching timeline', async () => {
   const callbacks = [],
@@ -83,7 +81,6 @@ test('runtime installs safe status receiver and stays inert without matching tim
       isTimelinePage: () => false,
       getTable: () => null,
       getProjectKey: () => null,
-      findTodayMarker: () => null,
     },
     JiraApi: {},
   };

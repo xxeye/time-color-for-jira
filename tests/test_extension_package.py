@@ -53,7 +53,7 @@ class ExtensionPackageTests(unittest.TestCase):
             self.assertEqual(data[name], (ROOT / source).read_bytes())
         self.assertIn('data-src="generator.html"', data['options.html'].decode('utf-8'))
         html = data['generator.html'].decode('utf-8')
-        for dependency in ['architecture_template.js', 'settings.js', 'generator.js', 'generator.css']:
+        for dependency in ['settings.js', 'generator.js', 'generator.css']:
             self.assertIn('"' + dependency + '"', html)
             self.assertIn(dependency, data)
 
