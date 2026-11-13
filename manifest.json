@@ -47,8 +47,10 @@
         "calendar.js",
         "timeline_dates.js",
         "timeline_geometry.js",
+        "timeline_model.js",
         "runtime_session.js",
         "timeline_adapter.js",
+        "page_bridge.js",
         "floating_toolbar.js",
         "timeline_color.js"
       ],

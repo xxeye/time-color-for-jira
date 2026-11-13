@@ -75,9 +75,10 @@ class ExtensionPackageTests(unittest.TestCase):
         self.assertEqual(scripts[0], 'i18n.js')
         self.assertEqual(manifest['default_locale'], 'en')
         self.assertEqual(manifest['options_ui']['page'], 'options.html')
-        for dependency in ['settings.js', 'settings_client.js', 'jiraApi.js', 'issue_rules.js', 'issue_cache.js', 'calendar.js', 'runtime_session.js', 'timeline_adapter.js']:
+        for dependency in ['settings.js', 'settings_client.js', 'jiraApi.js', 'issue_rules.js', 'issue_cache.js', 'calendar.js', 'timeline_model.js', 'runtime_session.js', 'timeline_adapter.js']:
             self.assertLess(scripts.index(dependency), scripts.index('timeline_color.js'))
         self.assertLess(scripts.index('timeline_adapter.js'), scripts.index('floating_toolbar.js'))
+        self.assertLess(scripts.index('page_bridge.js'), scripts.index('floating_toolbar.js'))
 
     def test_unknown_existing_output_is_rejected_without_deletion(self):
         with temporary_output() as temp:

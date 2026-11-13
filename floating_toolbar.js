@@ -11,6 +11,7 @@
     document: root.document,
     client: root.JptClient,
     adapter: root.JptTimeline,
+    page: root.JptPage,
     isAlive: () => {
       try {
         return !!root.chrome?.runtime?.id;
@@ -47,6 +48,7 @@
   `;
   function createToolbar(env) {
     const { window: win, document: doc, client, adapter } = env;
+    const page = env.page || root.JptPage || require('./page_bridge.js').create();
     const interval = env.setInterval || win.setInterval.bind(win),
       clear = env.clearInterval || win.clearInterval.bind(win);
     const later = env.setTimeout || win.setTimeout.bind(win),
@@ -77,12 +79,10 @@
     const listeners = [];
     // An imported file or the Jira project property (reported by the page) both configure the project.
     function applyPage(context) {
-      let page = null;
-      try {
-        page = win.__jptPageState?.();
-      } catch {}
-      configured = !!context.configured || !!page?.configured;
-      enabled = typeof page?.enabled === 'boolean' && page.configured ? page.enabled : context.settings?.enabled !== false;
+      const state = page.read();
+      configured = !!context.configured || !!state?.configured;
+      enabled =
+        typeof state?.enabled === 'boolean' && state.configured ? state.enabled : context.settings?.enabled !== false;
     }
     function listen(target, type, handler) {
       target.addEventListener(type, handler);
@@ -238,7 +238,7 @@
         refresh.disabled = true;
         const token = version;
         try {
-          const result = await (win.__jptRefresh ? win.__jptRefresh() : client.refresh());
+          const result = await (page.refresh() ?? client.refresh());
           if (token === version) message(result?.delivered > 0 ? t('tbRescanSent') : t('tbRescanNotDelivered'));
         } catch (error) {
           if (token === version) fail(error, t('tbActionRescan'));
@@ -355,7 +355,7 @@
         return;
       }
       if ((bar && !force) || (reading && !force)) return;
-      const resolved = win.__jptGetProjectId?.();
+      const resolved = page.read()?.projectId;
       const token = version,
         read = ++readVersion,
         project = /^\d+$/.test(resolved || '') ? String(resolved) : adapter.getProjectKey(win.location);
@@ -422,7 +422,7 @@
       listen(win, 'pageshow', () => {
         if (paused && !disposed) connect();
       });
-      listen(win, 'jpt:context-ready', () => void sync(true));
+      listeners.push(page.subscribe(() => void sync(true)));
       listen(win, 'popstate', () => void sync());
       listen(win, 'hashchange', () => void sync());
       listen(win, 'resize', () => {

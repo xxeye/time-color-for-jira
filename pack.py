@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parent
 FILES = (
     'manifest.json', 'background.js', 'settings.js', 'settings_broker.js',
     'settings_client.js', 'jiraApi.js', 'issue_rules.js', 'issue_cache.js',
-    'calendar.js', 'timeline_dates.js', 'timeline_geometry.js', 'runtime_session.js', 'timeline_adapter.js',
+    'calendar.js', 'timeline_dates.js', 'timeline_geometry.js', 'timeline_model.js','runtime_session.js', 'timeline_adapter.js', 'page_bridge.js',
     'floating_toolbar.js', 'timeline_color.js', 'timeline_color.css',
     'ui_helpers.js', 'popup.html', 'popup.js', 'popup.css',
     'onboarding.html', 'onboarding.js', 'onboarding.css',

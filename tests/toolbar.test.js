@@ -38,15 +38,19 @@ class Node extends EventTarget {
   }
 }
 const tick = () => new Promise(setImmediate);
-function fixture(overrides = {}, windowOverrides = {}) {
+function fixture(overrides = {}, pageOverrides = {}) {
   const win = new EventTarget();
   Object.assign(win, {
     innerWidth: 1000,
     innerHeight: 700,
-    __jptGetProjectId: () => '10001',
     location: new URL('https://acme.atlassian.net/jira/software/projects/ABC/boards/1/timeline'),
   });
-  Object.assign(win, windowOverrides);
+  const page = require('../page_bridge.js').create();
+  const provided = { projectId: () => '10001', ...pageOverrides };
+  page.provide({
+    read: () => ({ projectId: provided.projectId(), ...provided.state?.() }),
+    refresh: provided.refresh,
+  });
   const doc = new EventTarget();
   doc.body = new Node('body');
   doc.createElement = (t) => new Node(t);
@@ -75,6 +79,7 @@ function fixture(overrides = {}, windowOverrides = {}) {
     window: win,
     document: doc,
     client,
+    page,
     adapter: { isTimelinePage: (l) => l.pathname.endsWith('/timeline'), getProjectKey: () => 'ABC' },
     isAlive: () => true,
     setTimeout: (fn) => {
@@ -94,6 +99,7 @@ function fixture(overrides = {}, windowOverrides = {}) {
   return {
     win,
     doc,
+    page,
     api,
     writes,
     action,
@@ -202,13 +208,13 @@ test('resolved numeric project from runtime selects project configuration and co
         return { configured: true, settings: { enabled: args.projectId === '10001' } };
       },
     },
-    { __jptGetProjectId: () => project },
+    { projectId: () => project },
   );
   await tick();
   assert.equal(calls[0].projectId, '10001');
   assert.equal(f.action('toggle').attributes['aria-pressed'], 'true');
   project = '10002';
-  f.win.dispatchEvent(new Event('jpt:context-ready'));
+  f.page.notify();
   await tick();
   assert.equal(calls.at(-1).projectId, '10002');
   assert.equal(f.action('toggle').attributes['aria-pressed'], 'false');
@@ -269,7 +275,7 @@ test('refresh uses the local Timeline runtime instead of requesting a privileged
         throw Error('forbidden broadcast');
       },
     },
-    { __jptRefresh: async () => ({ delivered: 1 }) },
+    { refresh: async () => ({ delivered: 1 }) },
   );
   await tick();
   f.action('refresh').dispatchEvent(new Event('click'));
@@ -315,7 +321,7 @@ test('site defaults cannot flash missing-config or enabled before the project is
     configured = false;
   const f = fixture(
     { getContext: async () => ({ configured, settings: { enabled: true } }) },
-    { __jptGetProjectId: () => project },
+    { projectId: () => project },
   );
   await tick();
   assert.equal(f.action('toggle').disabled, true);
@@ -328,7 +334,7 @@ test('site defaults cannot flash missing-config or enabled before the project is
   assert.equal(f.action('toggle').attributes['aria-pressed'], 'false');
   assert.equal(f.status().textContent || '', '');
   project = '10001';
-  f.win.dispatchEvent(new Event('jpt:context-ready'));
+  f.page.notify();
   await tick();
   assert.equal(f.action('toggle').disabled, false);
   assert.equal(f.action('toggle').attributes['aria-pressed'], 'true');
@@ -361,7 +367,7 @@ test('leaving the page cancels pending feedback expiry', async () => {
 test('a project configured only by the Jira project property is shown as set up', async () => {
   const f = fixture(
     { getContext: async () => ({ configured: false, settings: { enabled: true }, position: null }) },
-    { __jptPageState: () => ({ configured: true, enabled: true }) },
+    { state: () => ({ configured: true, enabled: true }) },
   );
   await tick();
   const toggle = f.action('toggle');

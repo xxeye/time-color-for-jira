@@ -41,20 +41,30 @@
   const lifetime = new AbortController();
   const session = new JptSession.RuntimeSession({ api: JiraApi, client: JptClient });
   const t = (key, params) => JptI18n.t(key, params);
-  let status = { state: 'checking', message: t('statusCheckingSettings'), details: [], projectId: null };
-  window.__jptGetProjectId = () => status.projectId;
-  // The toolbar asks the page whether it is configured: the Jira project property counts, not just an imported file.
-  window.__jptPageState = () => ({
-    configured: !!status.source,
-    enabled: inputSignature ? JSON.parse(inputSignature).settings.enabled !== false : null,
+  // 面板讀到的狀態只透過這兩個函式改（每次都換成新物件，缺列提示靠物件身分判斷是否還有效）：
+  // startStatus：新的一次檢查或失敗，上一個專案的 projectId／來源／年份全部清掉。
+  // updateStatus：同一次檢查中狀況變了（資料讀取失敗、缺列），保留專案、來源、年份。
+  let status;
+  const startStatus = (state, message, info = {}) =>
+    (status = { state, message, details: [], projectId: null, ...info });
+  const updateStatus = (state, message) => (status = { ...status, state, message, details: [] });
+  startStatus('checking', t('statusCheckingSettings'));
+  // The toolbar reads this page through JptPage (page_bridge.js). "configured" counts the Jira project
+  // property as well as an imported file.
+  const unprovidePage = JptPage.provide({
+    read: () => ({
+      projectId: status.projectId,
+      configured: !!status.source,
+      enabled: inputSignature ? JSON.parse(inputSignature).settings.enabled !== false : null,
+    }),
+    refresh: async () => {
+      if (disposed) return { delivered: 0 };
+      stopActive();
+      session.clear();
+      requestSettingsReload();
+      return { delivered: 1 };
+    },
   });
-  window.__jptRefresh = async () => {
-    if (disposed) return { delivered: 0 };
-    stopActive();
-    session.clear();
-    requestSettingsReload();
-    return { delivered: 1 };
-  };
   const isActive = () => active && settings.enabled && !disposed && isTimelinePage();
   const on = (target, type, handler, options = {}) => {
     const opt = typeof options === 'boolean' ? { capture: options } : options;
@@ -67,10 +77,6 @@
       { ...opt, signal: lifetime.signal },
     );
   };
-  let FIELD_ROLE = null,
-    FIELD_EPIC_HIGHLIGHT = null,
-    FIELD_START_DATE = null,
-    FIELD_TARGET_END = null;
 
   // 染色標記類
   const PT_CLASS = 'jpt-pt-bar';
@@ -81,9 +87,6 @@
   const PT_TARGET_SHADE_CLASS = 'jpt-pt-target-end-shade';
   const EPIC_BAR_CLASS = 'jpt-epic-bar'; // 標記所有 Epic（不分有無 highlight），給鎖定拖曳用
   const ALL_CLASSES = [PT_CLASS, MS_CLASS, DIA_CLASS, EPIC_HIGHLIGHT_CLASS, EPIC_BAR_CLASS, PT_TARGET_SHADE_CLASS];
-
-  const TYPE_TO_CLASS = { planning: PT_CLASS, milestone: MS_CLASS };
-  const EPIC_TYPE_NAMES = new Set(['epic']);
 
   // ─── Jira DOM 查找（選擇器在 timeline_adapter.js）──────
   const T = JptTimeline;
@@ -279,15 +282,15 @@
     stopActive({ keepAppearance: !!profile && settings.enabled && isTimelinePage() });
     if (document.visibilityState === 'hidden') {
       session.clear();
-      status = { ...status, state: 'checking', message: t('statusReturnToTab'), details: [] };
+      updateStatus('checking', t('statusReturnToTab'));
       return;
     }
     if (!isTimelinePage()) {
       session.clear();
-      status = { state: 'unsupported', message: t('statusOpenTimeline'), details: [], projectId: null };
+      startStatus('unsupported', t('statusOpenTimeline'));
       return;
     }
-    status = { state: 'checking', message: t('statusCheckingJira'), details: [], projectId: null };
+    startStatus('checking', t('statusCheckingJira'));
     try {
       const result = await session.load(location.origin, JptTimeline.getProjectKey(location));
       if (epoch !== activationEpoch || disposed || !isTimelinePage()) return;
@@ -295,33 +298,25 @@
       calendarInfo = JptCalendar.dayInfo(profile?.calendar);
       inputSignature = result.inputSignature;
       settings = { ...DEFAULTS, ...result.settings, enabled: !!profile && result.settings.enabled !== false };
-      FIELD_ROLE = profile?.fields.role;
-      FIELD_EPIC_HIGHLIGHT = profile?.fields.epicHighlight;
-      FIELD_START_DATE = profile?.fields.startDate;
-      FIELD_TARGET_END = profile?.fields.targetEnd;
-      status = {
-        state: result.state,
-        message: result.message,
+      startStatus(result.state, result.message, {
         details: result.details,
         projectId: result.projectId,
         source: result.source || null,
         sourceLabel: result.sourceLabel || '',
         sourceUpdatedAt: result.sourceUpdatedAt || '',
         years: calendarInfo.years,
-      };
+      });
       updateActivation();
-      window.dispatchEvent(new Event('jpt:context-ready'));
+      JptPage.notify();
     } catch (error) {
       if (epoch !== activationEpoch || disposed || error.name === 'AbortError') return;
       settings.enabled = false;
       session.clear();
       stopActive();
-      status = {
-        state: error.status === 401 ? 'login' : 'unavailable',
-        message: error.status === 401 ? t('statusSignIn') : t('statusCantCheck'),
-        details: [],
-        projectId: null,
-      };
+      startStatus(
+        error.status === 401 ? 'login' : 'unavailable',
+        error.status === 401 ? t('statusSignIn') : t('statusCantCheck'),
+      );
     }
   };
   const requestSettingsReload = () => {
@@ -342,46 +337,17 @@
   const extractIssueKey = T.getRowKey;
 
   // ─── Milestone 進度 badge ──────────────────────────
-  const progressColorTier = (pct) => {
-    if (pct >= 100) return 'jpt-ms-progress-done';
-    if (pct >= 50) return 'jpt-ms-progress-mid';
-    if (pct > 0) return 'jpt-ms-progress-low';
-    return 'jpt-ms-progress-zero';
-  };
-
   const renderProgressBadge = (bar, progress, dueDate) => {
     const existing = bar.querySelector(`:scope > .${PROGRESS_CLASS}`);
-    const dueText = JptCalendar.monthDay(dueDate);
-    // 完成度與 Due date 各自可顯示；兩者都沒有或設定關閉才清掉 badge。
-    const hasProgress =
-      progress &&
-      Number.isFinite(progress.pct) &&
-      Number.isFinite(progress.total) &&
-      progress.total > 0 &&
-      Number.isFinite(progress.done) &&
-      Number.isFinite(progress.wip);
-    if ((!hasProgress && !dueText) || !settings.msShowProgress) {
+    const badge = settings.msShowProgress
+      ? JptModel.progressBadge(progress, dueDate, { weight: profile?.progress.inProgressWeight ?? 0, t })
+      : null;
+    if (!badge) {
       existing?.remove();
       return;
     }
-    // 分子 = 已完成數；% 依專案設定的進行中權重（0 或 0.5）計算，見 JptRules.computeProgress
-    const progressText = hasProgress ? `${progress.done}/${progress.total} ${progress.pct}%` : '';
-    const text = [progressText, dueText ? `DUE ${dueText}` : ''].filter(Boolean).join(' · ');
-    const progressTitle = !hasProgress
-      ? ''
-      : progress.wip > 0
-        ? t('progressTitleWip', {
-            done: progress.done,
-            wip: progress.wip,
-            weight: profile?.progress.inProgressWeight ?? 0,
-            total: progress.total,
-            pct: progress.pct,
-          })
-        : t('progressTitle', { done: progress.done, total: progress.total, pct: progress.pct });
-    const title = [progressTitle, dueText ? t('progressTitleDue', { date: dueDate }) : '']
-      .filter(Boolean)
-      .join(t('titleSeparator'));
-    const tier = hasProgress ? progressColorTier(progress.pct) : 'jpt-ms-progress-zero';
+    const { text, title } = badge,
+      tier = `jpt-ms-progress-${badge.tier}`;
     // 冪等：內容/色階一致就不動 DOM（避免 MutationObserver 雪球）
     if (existing && existing.textContent === text && existing.classList.contains(tier) && existing.title === title) {
       return;
@@ -408,17 +374,11 @@
       clear();
       return;
     }
-    const start = JptCalendar.dateOnlyMs(data.startDate);
-    const target = JptCalendar.dateOnlyMs(data.targetEndDate);
-    const due = JptCalendar.dateOnlyMs(data.dueDate);
-    if (![start, target, due].every(Number.isFinite) || !(start <= target && target <= due)) {
+    const ratio = JptModel.targetEndRatio(data);
+    if (ratio === null) {
       clear();
       return;
     }
-    const dayMs = 86_400_000;
-    const totalDays = Math.floor((due - start) / dayMs) + 1;
-    const targetOffsetDays = Math.floor((target - start) / dayMs);
-    const ratio = Math.max(0, Math.min(1, targetOffsetDays / totalDays));
     bar.style.setProperty('--jpt-target-end-ratio', `${(ratio * 100).toFixed(3)}%`);
     bar.classList.add(PT_TARGET_SHADE_CLASS);
   };
@@ -430,74 +390,22 @@
     const bar = findBarById(issueId);
     if (!bar) return;
 
-    // 目標狀態
-    const cls = type ? TYPE_TO_CLASS[type] : null;
-    const isMs = cls === MS_CLASS;
-    const isEpic = !cls && type && EPIC_TYPE_NAMES.has(type);
-    const wantPT = cls === PT_CLASS;
-    const wantMS = isMs;
-    const wantDIA = isMs && !!settings.msDiamond;
-    const wantEpicBar = !!isEpic;
-    const wantEpic = isEpic && !!settings.epicStripe && !!data.epicHighlight;
-
-    const cl = bar.classList;
-    if (cl.contains(PT_CLASS) !== wantPT) cl.toggle(PT_CLASS, wantPT);
-    if (cl.contains(MS_CLASS) !== wantMS) cl.toggle(MS_CLASS, wantMS);
-    if (cl.contains(DIA_CLASS) !== wantDIA) cl.toggle(DIA_CLASS, wantDIA);
-    if (cl.contains(EPIC_BAR_CLASS) !== wantEpicBar) cl.toggle(EPIC_BAR_CLASS, wantEpicBar);
-    if (cl.contains(EPIC_HIGHLIGHT_CLASS) !== wantEpic) cl.toggle(EPIC_HIGHLIGHT_CLASS, wantEpic);
+    const want = JptModel.barClasses(type, data, settings);
+    for (const [cls, on] of [
+      [PT_CLASS, want.planning],
+      [MS_CLASS, want.milestone],
+      [DIA_CLASS, want.diamond],
+      [EPIC_BAR_CLASS, want.epic],
+      [EPIC_HIGHLIGHT_CLASS, want.epicHighlight],
+    ])
+      if (bar.classList.contains(cls) !== on) bar.classList.toggle(cls, on);
 
     // Milestone 才顯示 badge；其他類型清掉（renderProgressBadge 自身冪等）
-    renderPtTargetEndShade(bar, wantPT ? data : null);
-    renderProgressBadge(bar, isMs ? data.progress : null, isMs ? data.dueDate : null);
+    renderPtTargetEndShade(bar, want.planning ? data : null);
+    renderProgressBadge(bar, want.milestone ? data.progress : null, want.milestone ? data.dueDate : null);
   };
 
-  // ─── 從 issuelinks 算 Milestone relates 完成度 ─────
-  // Jira API 回的 issuelinks 直接帶 outwardIssue/inwardIssue.fields.status
-  // 一次 batch fetch 就拿到所有資料，無需第二輪查。
-  // 只算專案設定指定的連結類型與方向（profile.progress.linkTypeIds／direction），見 JptRules.peers。
-  const computeMsProgress = (links) => JptRules.computeProgress(links, profile);
-
-  // 從 issuelinks 抽出 relates 任務清單（給 hover tooltip 用）
-  // typeIconUrl / typeName：用來在 tooltip 每列前面顯示議題類型圖示，一眼辨識任務類型
-  // （Story / Task / Bug / Sub-task / Planning Task ...）
-  // Apply at fetch time and again at render time so cached lists cannot retain an old order.
-  const RELATES_STATUS_ORDER = { indeterminate: 0, new: 1, done: 2 };
-  const sortRelatesList = (items) =>
-    items.slice().sort((a, b) => {
-      const statusOrder = (RELATES_STATUS_ORDER[a.statusCat] ?? 0) - (RELATES_STATUS_ORDER[b.statusCat] ?? 0);
-      if (statusOrder !== 0) return statusOrder;
-      const typeOrder = (a.typeName || '').localeCompare(b.typeName || '', undefined, {
-        numeric: true,
-        sensitivity: 'base',
-      });
-      if (typeOrder !== 0) return typeOrder;
-      const summaryOrder = (a.summary || '').localeCompare(b.summary || '', undefined, {
-        numeric: true,
-        sensitivity: 'base',
-      });
-      return summaryOrder !== 0
-        ? summaryOrder
-        : (a.key || '').localeCompare(b.key || '', undefined, { numeric: true, sensitivity: 'base' });
-    });
-
-  const computeRelatesList = (links) =>
-    sortRelatesList(
-      JptRules.peers(links, profile)
-        .map((peer) => ({
-          key: /^[A-Z][A-Z0-9_]*-\d+$/i.test(peer.key || '') ? peer.key : '',
-          summary: typeof peer.fields?.summary === 'string' ? peer.fields.summary.slice(0, 2000) : '',
-          statusCat: peer.fields?.status?.statusCategory?.key || '',
-          typeIconUrl: JptRules.safeIcon(peer.fields?.issuetype?.iconUrl || '', location.origin),
-          typeName: typeof peer.fields?.issuetype?.name === 'string' ? peer.fields.issuetype.name.slice(0, 100) : '',
-        }))
-        .filter((peer) => peer.key),
-    );
-
-  // ─── 批次查 issue 資料 ─────────────────────────────
-  // - issuelinks 只在 msShowProgress 開啟時才抓（response size 大幅縮小）
-  // Epic 高亮欄位可能是 string / 單選 object / 多選 array — 容錯三種形式
-  const isEpicHighlightOn = (raw) => JptRules.highlight(raw, profile?.highlightRule);
+  // ─── 批次查 issue 資料（每筆轉成快取紀錄：JptRules.toIssueRecord）─────
 
   const BATCH_SIZE = JiraApi.maxBatch;
   // API 持續失敗（session 過期 401 / infra 5xx）時的退避 — 沒有這個的話，
@@ -517,28 +425,10 @@
       const seen = new Set();
       for (const issue of issues) {
         if (!keys.includes(issue.key)) continue;
-        const fields = issue.fields || {},
-          type = JptRules.classifyIssue(issue, profile);
-        const role = fields[FIELD_ROLE];
-        const roles = (Array.isArray(role) ? role : role == null ? [] : [role])
-          .map((value) => (typeof value === 'string' ? value : value?.value || value?.name))
-          .filter((value) => typeof value === 'string')
-          .slice(0, 30)
-          .map((value) => value.slice(0, 100));
-        const date = (value) => (JptCalendar.parseDate(value) !== null ? value : null);
-        typeCache.set(issue.key, type);
-        dataCache.set(issue.key, {
-          epicHighlight: isEpicHighlightOn(fields[FIELD_EPIC_HIGHLIGHT]),
-          progress: type === 'milestone' && settings.msShowProgress ? computeMsProgress(fields.issuelinks) : null,
-          startDate: date(fields[FIELD_START_DATE]),
-          dueDate: date(fields.duedate),
-          targetEndDate: date(fields[FIELD_TARGET_END]),
-          ts: Date.now(),
-        });
-        detailCache.set(issue.key, {
-          relates: type === 'milestone' && settings.msShowProgress ? computeRelatesList(fields.issuelinks) : [],
-          roles,
-        });
+        const record = JptRules.toIssueRecord(issue, profile, settings, location.origin);
+        typeCache.set(issue.key, record.type);
+        dataCache.set(issue.key, { ...record.data, ts: Date.now() });
+        detailCache.set(issue.key, record.detail);
         seen.add(issue.key);
       }
       for (const key of keys)
@@ -553,13 +443,8 @@
       if (error.status === 401 || error.status === 403) {
         stopActive();
         session.clear();
-        status = {
-          ...status,
-          state: error.status === 401 ? 'login' : 'unavailable',
-          message: t('statusAccessChanged'),
-          details: [],
-        };
-      } else status = { ...status, state: 'partial', message: t('statusPartialData'), details: [] };
+        updateStatus(error.status === 401 ? 'login' : 'unavailable', t('statusAccessChanged'));
+      } else updateStatus('partial', t('statusPartialData'));
     } finally {
       if (epoch === generation) keys.forEach((key) => pending.delete(key));
     }
@@ -588,13 +473,13 @@
   };
   const noteRowsFound = (found) => {
     if (found) {
-      if (noRowsStatus && status === noRowsStatus) status = statusBeforeNoRows;
+      if (noRowsStatus && status === noRowsStatus) status = statusBeforeNoRows; // 唯一不經 start／updateStatus：還原快照
       resetRowCheck();
       return;
     }
     if (++emptyScans < NO_ROWS_REPORT_AFTER || status.state !== 'ready') return;
     statusBeforeNoRows = status;
-    status = noRowsStatus = { ...status, state: 'partial', message: t('statusNoIssueRows'), details: [] };
+    noRowsStatus = updateStatus('partial', t('statusNoIssueRows'));
   };
 
   const scan = async () => {
@@ -684,48 +569,59 @@
     return hoverTipEl;
   };
 
-  const escapeHtml = (s) =>
-    String(s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-
   const fmtMonthDay = (iso) => JptCalendar.monthDay(iso, '-');
   // 「起 ~ 訖」字串；任一沒填補 '-'，都沒填顯示 '- ~ -'
   const fmtDateRange = (start, due) => `${fmtMonthDay(start)} ~ ${fmtMonthDay(due)}`;
 
-  const buildTipHtml = (type, data) => {
+  // 卡片用 DOM 組（文字一律走 textContent，不組 HTML 字串）；icon 網址在 JptRules.toIssueRecord 已限同站 https。
+  const el = (tag, className, text) => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text != null) node.textContent = text;
+    return node;
+  };
+  const buildTip = (type, data) => {
     if (type === 'planning') {
       if (!data.roles?.length) return null;
-      return `<div class="jpt-tip-row"><span class="jpt-tip-label">${escapeHtml(t('tipRoles'))}</span><span class="jpt-tip-roles">${data.roles.map((r) => `<span class="jpt-tip-role-chip">${escapeHtml(r)}</span>`).join('')}</span></div>`;
+      const chips = el('span', 'jpt-tip-roles');
+      chips.append(...data.roles.map((role) => el('span', 'jpt-tip-role-chip', role)));
+      const row = el('div', 'jpt-tip-row');
+      row.append(el('span', 'jpt-tip-label', t('tipRoles')), chips);
+      return [row];
     }
     if (type === 'milestone') {
       if (!data.relates?.length) return null;
-      const relates = sortRelatesList(data.relates);
+      const relates = JptRules.sortRelates(data.relates);
       const done = relates.filter((r) => r.statusCat === 'done').length;
       const wip = relates.filter((r) => r.statusCat === 'indeterminate').length;
-      const total = relates.length;
-      return `
-        <div class="jpt-tip-header">${escapeHtml(t(wip ? 'tipLinkedHeaderWip' : 'tipLinkedHeader', { done, total, wip }))}</div>
-        <div class="jpt-tip-body">
-          ${relates
-            .map((r) => {
-              // 每筆 relates 任務的 start/due 日期，需從 dataCache 查（issuelinks 不會回 peer 的日期）
-              // 沒抓過或抓不到 → fmtMonthDay 自動回 '-'
-              const peer = dataCache.get(r.key);
-              const dateRange = fmtDateRange(peer?.startDate, peer?.dueDate);
-              return `
-            <div class="jpt-tip-item jpt-tip-${escapeHtml(r.statusCat || 'new')}">
-              <span class="jpt-tip-status">${STATUS_ICON[r.statusCat] || '·'}</span>
-              ${r.typeIconUrl ? `<img class="jpt-tip-type-icon" src="${escapeHtml(r.typeIconUrl)}" alt="${escapeHtml(r.typeName)}" title="${escapeHtml(r.typeName)}">` : '<span class="jpt-tip-type-icon jpt-tip-type-icon-empty"></span>'}
-              <span class="jpt-tip-daterange" title="${escapeHtml(r.key)}">${escapeHtml(dateRange)}</span>
-              <span class="jpt-tip-summary">${escapeHtml(r.summary)}</span>
-            </div>`;
-            })
-            .join('')}
-        </div>`;
+      const header = el(
+        'div',
+        'jpt-tip-header',
+        t(wip ? 'tipLinkedHeaderWip' : 'tipLinkedHeader', { done, total: relates.length, wip }),
+      );
+      const body = el('div', 'jpt-tip-body');
+      for (const r of relates) {
+        const category = Object.hasOwn(STATUS_ICON, r.statusCat) ? r.statusCat : 'new';
+        const item = el('div', `jpt-tip-item jpt-tip-${category}`);
+        let icon;
+        if (r.typeIconUrl) {
+          icon = el('img', 'jpt-tip-type-icon');
+          icon.src = r.typeIconUrl;
+          icon.alt = icon.title = r.typeName;
+        } else icon = el('span', 'jpt-tip-type-icon jpt-tip-type-icon-empty');
+        // relates 任務的起訖日要從 dataCache 查（issuelinks 不帶 peer 的日期）；沒抓過顯示 '-'
+        const peer = dataCache.get(r.key);
+        const range = el('span', 'jpt-tip-daterange', fmtDateRange(peer?.startDate, peer?.dueDate));
+        range.title = r.key;
+        item.append(
+          el('span', 'jpt-tip-status', STATUS_ICON[r.statusCat] || '·'),
+          icon,
+          range,
+          el('span', 'jpt-tip-summary', r.summary),
+        );
+        body.append(item);
+      }
+      return [header, body];
     }
     return null;
   };
@@ -784,11 +680,11 @@
       }, LAZY_FETCH_DELAY_MS);
     }
     const data = getData(key);
-    const html = buildTipHtml(type, data);
-    if (!html) return;
+    const nodes = buildTip(type, data);
+    if (!nodes) return;
     const tip = ensureHoverTip();
     clearTimeout(hoverTipHideTimer);
-    tip.innerHTML = html;
+    tip.replaceChildren(...nodes);
     tip.dataset.key = key; // 標記是哪個任務的 tip — lazy 補抓完才知道要不要更新
     tip.className = `jpt-hover-tip-${type === 'planning' ? 'pt' : 'ms'}`;
     tip.style.display = 'block';
@@ -818,8 +714,8 @@
             hoverTipEl.style.display === 'block' &&
             hoverTipEl.dataset.key === key
           ) {
-            const fresh = getData(key);
-            hoverTipEl.innerHTML = buildTipHtml(type, fresh) || hoverTipEl.innerHTML;
+            const nodes = buildTip(type, getData(key));
+            if (nodes) hoverTipEl.replaceChildren(...nodes);
             requestAnimationFrame(() => positionTipAboveBar(bar));
           }
         }, LAZY_FETCH_DELAY_MS);
@@ -1270,6 +1166,7 @@
     themeObserver?.disconnect();
     document.body?.classList.remove('jpt-theme-light', 'jpt-theme-dark');
     unsubscribe?.();
+    unprovidePage();
     try {
       chrome.runtime.onMessage.removeListener(onMessage);
     } catch {}
