@@ -22,6 +22,11 @@ declare global {
   var JptGenerator: typeof import('../config-generator/generator.js');
   // The toolbar keeps a handle to itself so a re-injected copy can remove the old one first.
   var __jptToolbar: ReturnType<typeof import('../floating_toolbar.js').createToolbar> | undefined;
+
+  // The code keeps cleared timer ids as null and passes them back; the DOM accepts null (it becomes 0, an id
+  // no timer has), but lib.dom only lists `number | undefined`.
+  function clearTimeout(id: number | null | undefined): void;
+  function clearInterval(id: number | null | undefined): void;
 }
 
 export {};

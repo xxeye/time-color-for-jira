@@ -1,7 +1,12 @@
+// @ts-check
+/** @import { PreferenceKey } from './types/domain' */
+/** @import { PageContext } from './types/runtime' */
 'use strict';
 JptI18n.apply(document);
 const t = JptI18n.t;
-const $ = (id) => document.getElementById(id);
+const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
+// Every control in `controls`, and its `-text` twin, is an <input>.
+const $input = (/** @type {string} */ id) => /** @type {HTMLInputElement} */ ($(id));
 const controls = {
   ptColorEnabled: 'pt-color-enabled',
   ptColor: 'pt-color',
@@ -19,8 +24,10 @@ const controls = {
   showHolidays: 'show-holidays',
   showWorkingDays: 'show-working-days',
 };
+/** @type {{ origin?: string, projectId?: string }} */
 let tabContext = {};
 let loading = false;
+/** @param {string} text */
 function notice(text, error = false) {
   $('status').textContent = text;
   $('status').classList.add('show');
@@ -32,6 +39,7 @@ async function load() {
     const tab = (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
     tabContext = {};
     // What the Timeline tab actually uses: the project property may replace the imported file.
+    /** @type {PageContext | null} */
     let page = null;
     if (tab?.url && JptSettings.normalizeOrigin(new URL(tab.url).origin)) {
       const url = new URL(tab.url);
@@ -39,7 +47,7 @@ async function load() {
       const match = url.pathname.match(/\/projects\/(\d+)(?:\/|$)/);
       if (match) tabContext.projectId = match[1];
       try {
-        page = await chrome.tabs.sendMessage(tab.id, { type: 'jpt:context' }, { frameId: 0 });
+        page = await chrome.tabs.sendMessage(/** @type {number} */ (tab.id), { type: 'jpt:context' }, { frameId: 0 });
         if (JptSettings.isProjectId(page?.projectId)) tabContext.projectId = page.projectId;
       } catch (_) {}
     }
@@ -47,14 +55,15 @@ async function load() {
     const fromProperty = page?.source === 'property';
     // Project defaults come from the page; personal preferences always come from storage (never stale).
     const cfg =
-      fromProperty && page.profileSettings
+      fromProperty && page?.profileSettings
         ? JptSettings.effectiveSettings({ settings: page.profileSettings }, context.preferences || {})
         : context.settings || JptSettings.DEFAULTS;
     for (const [key, id] of Object.entries(controls)) {
-      if ($(id).type === 'checkbox') $(id).checked = !!cfg[key];
+      const value = cfg[/** @type {PreferenceKey} */ (key)];
+      if ($input(id).type === 'checkbox') $input(id).checked = !!value;
       else {
-        $(id).value = cfg[key];
-        $(id + '-text').value = cfg[key];
+        $input(id).value = /** @type {string} */ (value);
+        $input(id + '-text').value = /** @type {string} */ (value);
       }
     }
     const source = JptUI.sourceText(page);
@@ -74,7 +83,7 @@ async function load() {
         $('runtime-title').textContent =
           status.state === 'disabled' ? t('statusDisabledTitle') : fromProperty ? t('statusProjectReady') : t('statusSiteSaved');
         $('runtime-message').textContent = tabContext.origin || '';
-        $('runtime-details').parentElement.hidden = true;
+        /** @type {HTMLElement} */ ($('runtime-details').parentElement).hidden = true;
       }
     } else if (tabContext.origin)
       JptUI.renderStatus({ state: 'needs-config', message: t('popupImportPrompt'), details: [] });
@@ -88,6 +97,7 @@ async function load() {
     loading = false;
   }
 }
+/** @param {string} key @param {string | boolean} value */
 async function save(key, value) {
   if (loading) return;
   try {
@@ -98,21 +108,21 @@ async function save(key, value) {
   }
 }
 for (const [key, id] of Object.entries(controls)) {
-  const input = $(id);
+  const input = $input(id);
   if (input.type === 'checkbox') input.addEventListener('change', () => save(key, input.checked));
   else {
     input.addEventListener('input', () => {
-      $(id + '-text').value = input.value;
+      $input(id + '-text').value = input.value;
     });
     input.addEventListener('change', () => save(key, input.value));
-    $(id + '-text').addEventListener('change', () => {
-      const value = $(id + '-text').value.trim();
+    $input(id + '-text').addEventListener('change', () => {
+      const value = $input(id + '-text').value.trim();
       if (!/^#[\da-f]{6}$/i.test(value)) {
-        $(id + '-text').setAttribute('aria-invalid', 'true');
+        $input(id + '-text').setAttribute('aria-invalid', 'true');
         notice(t('invalidColor'), true);
         return;
       }
-      $(id + '-text').removeAttribute('aria-invalid');
+      $input(id + '-text').removeAttribute('aria-invalid');
       input.value = value;
       save(key, value);
     });

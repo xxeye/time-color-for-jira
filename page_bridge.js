@@ -1,3 +1,5 @@
+// @ts-check
+/** @import { PageProvider, PageState } from './types/runtime' */
 // The only interface between the page runtime (timeline_color.js) and the toolbar (floating_toolbar.js).
 // The toolbar starts first, so the bridge exists before the runtime provides itself; until then read()
 // returns null, which means "not known yet", not "not configured".
@@ -13,15 +15,19 @@
 })(globalThis, function () {
   'use strict';
   function create() {
+    /** @type {PageProvider | null} */
     let provider = null;
+    /** @type {Set<() => void>} */
     const listeners = new Set();
     return Object.freeze({
+      /** @param {PageProvider} next @returns {() => void} */
       provide(next) {
         provider = next;
         return () => {
           if (provider === next) provider = null;
         };
       },
+      /** @returns {PageState | null} */
       read() {
         try {
           return provider?.read() || null;
@@ -29,6 +35,7 @@
           return null;
         }
       },
+      /** @returns {Promise<{ delivered: number }> | null} */
       refresh() {
         return provider?.refresh ? provider.refresh() : null;
       },
@@ -38,6 +45,7 @@
             fn();
           } catch {}
       },
+      /** @param {() => void} fn */
       subscribe(fn) {
         listeners.add(fn);
         return () => listeners.delete(fn);

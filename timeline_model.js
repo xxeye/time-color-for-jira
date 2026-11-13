@@ -12,7 +12,7 @@
   const calendar = () => globalThis.JptCalendar || require('./calendar.js');
 
   // Which style each bar gets, from its issue type (JptRules.classifyIssue) and the user's settings.
-  /** @param {IssueKind} type @param {IssueData | null | undefined} data @param {Preferences} s @returns {BarClasses} */
+  /** @param {IssueKind} type @param {Partial<Pick<IssueData, 'epicHighlight'>> | null | undefined} data @param {Preferences} s @returns {BarClasses} */
   function barClasses(type, data, s) {
     const planning = type === 'planning',
       milestone = type === 'milestone',

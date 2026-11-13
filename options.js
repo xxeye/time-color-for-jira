@@ -1,21 +1,30 @@
+// @ts-check
+/** @import { Config, Profile } from './types/domain' */
 'use strict';
 JptI18n.apply(document);
 const t = JptI18n.t;
-const $ = (id) => document.getElementById(id);
+const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
+const $input = (/** @type {string} */ id) => /** @type {HTMLInputElement} */ ($(id));
+const $button = (/** @type {string} */ id) => /** @type {HTMLButtonElement} */ ($(id));
+/** @type {Config | null} */
 let draft = null,
   importing = false;
+/** @param {string} message */
 function notice(message, error = false) {
   $('notice').textContent = message;
   $('notice').classList.toggle('error', error);
   if (error) $('notice').focus();
 }
-function errorMessage(e) {
+/** @param {unknown} thrown */
+function errorMessage(thrown) {
+  const e = /** @type {{ code?: unknown, message?: string } | null | undefined} */ (thrown);
   return e?.code === 'invalid'
     ? t('errInvalidConfigFile')
     : e?.code === 'missing'
       ? t('errNothingToRestore')
       : e?.message || t('errActionIncomplete');
 }
+/** @param {HTMLButtonElement} button @param {() => Promise<void>} task */
 async function run(button, task) {
   button.disabled = true;
   try {
@@ -30,8 +39,9 @@ async function run(button, task) {
   }
 }
 // 取代 window.confirm：原生 <dialog> 的 showModal()，預設焦點在取消；只有按下確認鈕才算同意（Esc、取消都不算）。
+/** @param {string} message @param {string} actionLabel @returns {Promise<boolean>} */
 function ask(message, actionLabel) {
-  const dialog = $('confirm-dialog');
+  const dialog = /** @type {HTMLDialogElement} */ ($('confirm-dialog'));
   if (dialog.open) return Promise.resolve(false);
   $('confirm-message').textContent = message;
   $('confirm-ok').textContent = actionLabel;
@@ -49,12 +59,14 @@ function ask(message, actionLabel) {
     dialog.showModal();
   });
 }
+/** @param {Config} config */
 function scopes(config) {
   return Object.entries(config.sites).flatMap(([origin, site]) => [
     ...(site.defaults ? [{ origin, project: '', profile: site.defaults }] : []),
     ...Object.entries(site.projects).map(([project, profile]) => ({ origin, project, profile })),
   ]);
 }
+/** @param {Profile} profile */
 function features(profile) {
   const settings = JptSettings.effectiveSettings(profile, {}),
     names = [];
@@ -66,6 +78,7 @@ function features(profile) {
   if (settings.showWorkingDays) names.push(t('featureWorkingDays'));
   return names.join(t('listSeparator')) || t('featureDefault');
 }
+/** @param {{ origin: string, project: string, profile: Profile }} item */
 function scopeRow(item) {
   const row = document.createElement('div');
   row.className = 'scope-row';
@@ -81,6 +94,7 @@ function scopeRow(item) {
   row.append(calendar);
   return row;
 }
+/** @param {Config} value */
 function showDraft(value) {
   draft = value;
   $('preview-list').replaceChildren();
@@ -98,13 +112,13 @@ function hideDraft() {
   draft = null;
   $('preview').hidden = true;
   $('preview-list').replaceChildren();
-  $('config-file').value = '';
+  $input('config-file').value = '';
 }
 async function load() {
   const { config } = await JptClient.getAll();
   $('sites').replaceChildren();
   const entries = config ? scopes(config) : [];
-  $('export').disabled = !entries.length;
+  $button('export').disabled = !entries.length;
   if (!entries.length) {
     $('sites').textContent = t('noSavedConfig');
     return;
@@ -163,11 +177,12 @@ async function load() {
     $('sites').append(row);
   }
 }
+/** @param {File | undefined} file */
 async function chooseFile(file) {
   if (!file || importing) return;
   importing = true;
-  $('config-file').disabled = true;
-  $('apply').disabled = true;
+  $input('config-file').disabled = true;
+  $button('apply').disabled = true;
   try {
     const value = await JptUI.readConfig(file, JptSettings);
     await JptClient.saveDraft(value);
@@ -178,11 +193,11 @@ async function chooseFile(file) {
     notice(errorMessage(e), true);
   } finally {
     importing = false;
-    $('config-file').disabled = false;
-    $('apply').disabled = false;
+    $input('config-file').disabled = false;
+    $button('apply').disabled = false;
   }
 }
-$('config-file').addEventListener('change', (event) => chooseFile(event.target.files[0]));
+$input('config-file').addEventListener('change', (event) => chooseFile(/** @type {FileList} */ (/** @type {HTMLInputElement} */ (event.target).files)[0]));
 $('drop-zone').addEventListener('dragover', (event) => {
   event.preventDefault();
   $('drop-zone').classList.add('dragging');
@@ -191,17 +206,17 @@ $('drop-zone').addEventListener('dragleave', () => $('drop-zone').classList.remo
 $('drop-zone').addEventListener('drop', (event) => {
   event.preventDefault();
   $('drop-zone').classList.remove('dragging');
-  return chooseFile(event.dataTransfer.files[0]);
+  return chooseFile(/** @type {DataTransfer} */ (event.dataTransfer).files[0]);
 });
-$('apply').addEventListener('click', () =>
-  run($('apply'), async () => {
+$button('apply').addEventListener('click', () =>
+  run($button('apply'), async () => {
     if (!draft || importing) return;
     importing = true;
-    $('config-file').disabled = true;
-    $('discard').disabled = true;
+    $input('config-file').disabled = true;
+    $button('discard').disabled = true;
     try {
       const result = await JptUI.applyImport(JptClient, draft, () => ask(t('confirmReplace'), t('replaceAction')));
-      if (result.cancelled) {
+      if (/** @type {{ cancelled?: boolean }} */ (result).cancelled) {
         notice(t('replaceCancelled'));
         return;
       }
@@ -212,43 +227,43 @@ $('apply').addEventListener('click', () =>
       $('saved-heading').focus();
     } finally {
       importing = false;
-      $('config-file').disabled = false;
-      $('discard').disabled = false;
+      $input('config-file').disabled = false;
+      $button('discard').disabled = false;
     }
   }),
 );
-$('discard').addEventListener('click', () =>
-  run($('discard'), async () => {
+$button('discard').addEventListener('click', () =>
+  run($button('discard'), async () => {
     if (importing) return;
     await JptClient.clearDraft();
     hideDraft();
     notice(t('importCancelled'));
-    $('config-file').focus();
+    $input('config-file').focus();
   }),
 );
-$('export').addEventListener('click', () =>
-  run($('export'), async () => {
+$button('export').addEventListener('click', () =>
+  run($button('export'), async () => {
     JptUI.download(await JptClient.exportConfig());
     notice(t('configDownloaded'));
   }),
 );
-$('restore').addEventListener('click', () =>
-  run($('restore'), async () => {
+$button('restore').addEventListener('click', () =>
+  run($button('restore'), async () => {
     if (!(await ask(t('confirmRestore'), t('restoreAction')))) return;
     await JptClient.restoreConfig();
     await load();
     notice(t('configRestored'));
   }),
 );
-$('reset').addEventListener('click', () =>
-  run($('reset'), async () => {
+$button('reset').addEventListener('click', () =>
+  run($button('reset'), async () => {
     if (!(await ask(t('confirmResetAppearance'), t('resetAction')))) return;
     await JptClient.resetPreferences();
     notice(t('appearanceReset'));
   }),
 );
-$('refresh').addEventListener('click', () =>
-  run($('refresh'), async () => {
+$button('refresh').addEventListener('click', () =>
+  run($button('refresh'), async () => {
     const result = await JptClient.refresh();
     notice(
       result.delivered
