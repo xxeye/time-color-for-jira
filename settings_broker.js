@@ -19,6 +19,28 @@
     corrupt: 'errCorrupt',
     missing: 'errMissing',
   };
+  // Every settings message ("jpt:<method>") and the fields it may carry. The single list of methods.
+  const SHAPES = Object.freeze({
+    getContext: ['origin', 'projectId'],
+    getAll: [],
+    importConfig: ['config', 'replace'],
+    savePreferences: ['patch'],
+    resetPreferences: [],
+    savePosition: ['position'],
+    removeSite: ['origin'],
+    restoreConfig: [],
+    exportConfig: [],
+    getDraft: [],
+    saveDraft: ['config'],
+    clearDraft: [],
+    refresh: [],
+  });
+  // Routing check for the worker: is this one of our settings messages? Field checks stay in handle().
+  const accepts = (message) =>
+    !!message &&
+    typeof message.type === 'string' &&
+    message.type.startsWith('jpt:') &&
+    Object.hasOwn(SHAPES, message.type.slice(4));
   function failure(code, errors) {
     return Object.assign(new Error(t(messageKeys[code])), { code, errors });
   }
@@ -92,7 +114,7 @@
         else config.sites[origin].projects[scope] = p;
       }
       const normalized = checked(config, 'corrupt');
-      const position = raw[POS] === undefined ? { side: 'right', ratio: 0.92 } : raw[POS];
+      const position = raw[POS] === undefined ? { ...S.DEFAULT_POSITION } : raw[POS];
       if (!S.validatePosition(position)) throw failure('corrupt');
       return { config: normalized, preferences, position, raw };
     }
@@ -184,21 +206,6 @@
       const retired = Object.keys(patch).filter((k) => patch[k] === null);
       if (retired.length) await chrome.storage.sync.remove(retired).catch(() => {});
     }
-    const shapes = {
-      getContext: ['origin', 'projectId'],
-      getAll: [],
-      importConfig: ['config', 'replace'],
-      savePreferences: ['patch'],
-      resetPreferences: [],
-      savePosition: ['position'],
-      removeSite: ['origin'],
-      restoreConfig: [],
-      exportConfig: [],
-      getDraft: [],
-      saveDraft: ['config'],
-      clearDraft: [],
-      refresh: [],
-    };
     async function execute(message, sender) {
       const access = trust(sender);
       if (!message || typeof message !== 'object' || Array.isArray(message) || typeof message.type !== 'string')
@@ -206,8 +213,8 @@
       const method = message.type.slice(4);
       if (
         message.type !== 'jpt:' + method ||
-        !Object.hasOwn(shapes, method) ||
-        Object.keys(message).some((k) => k !== 'type' && !shapes[method].includes(k))
+        !Object.hasOwn(SHAPES, method) ||
+        Object.keys(message).some((k) => k !== 'type' && !SHAPES[method].includes(k))
       )
         throw failure('invalid');
       if (!access.ui && !['getContext', 'savePreferences', 'savePosition'].includes(method)) throw failure('forbidden');
@@ -312,5 +319,5 @@
     }
     return { handle, init: () => serial(init), notify };
   }
-  return { createBroker };
+  return { createBroker, accepts };
 });

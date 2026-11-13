@@ -2,6 +2,8 @@
 (function (root) {
   'use strict';
   const abortError = () => new DOMException('Cancelled', 'AbortError');
+  // Most issue keys per searchByKeys call; also the page size asked from Jira.
+  const MAX_BATCH = 50;
   function sleep(ms, signal) {
     return new Promise((resolve, reject) => {
       if (signal?.aborted) return reject(abortError());
@@ -86,7 +88,7 @@
       }
     }
     async function searchByKeys(keys, fs = ['issuetype'], options = {}) {
-      if (!Array.isArray(keys) || keys.length > 50) throw new Error('Invalid batch');
+      if (!Array.isArray(keys) || keys.length > MAX_BATCH) throw new Error('Invalid batch');
       keys.forEach(key);
       fs = fields(fs);
       if (!keys.length) return [];
@@ -97,7 +99,7 @@
       for (let page = 0; page < 100; page++) {
         const data = await request(
           '/rest/api/3/search/jql',
-          { jql, fields: fs, maxResults: 50, ...(nextPageToken ? { nextPageToken } : {}) },
+          { jql, fields: fs, maxResults: MAX_BATCH, ...(nextPageToken ? { nextPageToken } : {}) },
           options,
         );
         if (!Array.isArray(data?.issues)) throw new Error('Invalid Jira response');
@@ -110,6 +112,7 @@
       throw new Error('Jira page limit reached');
     }
     return {
+      maxBatch: MAX_BATCH,
       searchByKeys,
       sleep,
       getFields: (o) => request('/rest/api/3/field', null, o),

@@ -77,6 +77,8 @@
   function validatePreferences(x) {
     return object(x) && Object.entries(x).every(([k, v]) => validPreference(k, v));
   }
+  // Floating toolbar position when the user has not moved it yet.
+  const DEFAULT_POSITION = Object.freeze({ side: 'right', ratio: 0.92 });
   function validatePosition(x) {
     return (
       object(x) &&
@@ -358,6 +360,7 @@
     effectiveSettings,
     validatePreferences,
     validatePosition,
+    DEFAULT_POSITION,
     isProjectId: id,
   };
 });

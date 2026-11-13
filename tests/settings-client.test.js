@@ -48,6 +48,7 @@ test('background never opens a setup page on install or update and brokers async
       },
     },
     JptSettingsBroker: {
+      accepts: require('../settings_broker.js').accepts,
       createBroker() {
         return {
           async init() {},
