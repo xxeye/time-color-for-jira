@@ -1,10 +1,15 @@
+// @ts-check
+/** @import { Config, Profile, ValidationError } from './types/domain' */
+/** @import { BrokerErrorCode, BrokerResponse, ImportConflict, SettingsMethod, SettingsReply, SettingsRpc } from './types/messages' */
 (function (root, factory) {
   const api = factory(typeof module === 'object' && module.exports ? require('./settings.js') : root.JptSettings, root);
   if (typeof module === 'object' && module.exports) module.exports = api;
   root.JptSettingsBroker = api;
 })(globalThis, /** @param {typeof import('./settings.js')} S @param {typeof globalThis} root */ function (S, root) {
   'use strict';
-  const t = (key) => (root.JptI18n || require('./i18n.js').forLocale()).t(key);
+  const t = (/** @type {string} */ key) => (root.JptI18n || require('./i18n.js').forLocale()).t(key);
+  // A request after the routing check: each field is checked against SHAPES and its own rule before use.
+  /** @typedef {Record<string, any>} Loose */
   const PREFIX = 'jpt:profile:',
     PREF = 'jpt:preferences',
     META = 'jpt:meta',
@@ -12,6 +17,7 @@
     MIG = 'jpt:migrated',
     DRAFT = 'jpt:draft',
     BACKUP = 'jpt:restore';
+  /** @type {Record<BrokerErrorCode, string>} */
   const messageKeys = {
     forbidden: 'errForbidden',
     invalid: 'errInvalid',
@@ -20,6 +26,7 @@
     missing: 'errMissing',
   };
   // Every settings message ("jpt:<method>") and the fields it may carry. The single list of methods.
+  /** @type {Readonly<{ [M in SettingsMethod]: readonly (keyof SettingsRpc[M]['args'])[] }>} */
   const SHAPES = Object.freeze({
     getContext: ['origin', 'projectId'],
     getAll: [],
@@ -36,23 +43,30 @@
     refresh: [],
   });
   // Routing check for the worker: is this one of our settings messages? Field checks stay in handle().
-  const accepts = (message) =>
-    !!message &&
-    typeof message.type === 'string' &&
-    message.type.startsWith('jpt:') &&
-    Object.hasOwn(SHAPES, message.type.slice(4));
+  /** @param {unknown} message @returns {boolean} */
+  const accepts = (message) => {
+    const type = message && typeof message === 'object' ? /** @type {{ type?: unknown }} */ (message).type : undefined;
+    return typeof type === 'string' && type.startsWith('jpt:') && Object.hasOwn(SHAPES, type.slice(4));
+  };
+  /** @param {BrokerErrorCode} code @param {ValidationError[]} [errors] @returns {Error & { code: BrokerErrorCode, errors?: ValidationError[] }} */
   function failure(code, errors) {
     return Object.assign(new Error(t(messageKeys[code])), { code, errors });
   }
-  const key = (origin, pid) => PREFIX + encodeURIComponent(origin) + ':' + (pid === null ? 'defaults' : pid);
+  const key = (/** @type {string} */ origin, /** @type {string | null} */ pid) => PREFIX + encodeURIComponent(origin) + ':' + (pid === null ? 'defaults' : pid);
+  /** @param {unknown} raw @param {BrokerErrorCode} [code] @returns {Config} */
   function checked(raw, code = 'invalid') {
     const r = S.validateConfig(raw);
     if (!r.ok) throw failure(code, r.errors);
     return r.value;
   }
+  /** @param {typeof globalThis.chrome} chrome */
   function createBroker(chrome) {
-    let ready,
+    /** @type {Promise<void> | null} */
+    let ready = null,
+      /** @type {Promise<unknown>} */
       tail = Promise.resolve();
+    // Runs storage work one at a time, keeping each caller's result type.
+    /** @template T @param {() => T | Promise<T>} fn @returns {Promise<T>} */
     const serial = (fn) => {
       const work = tail.then(fn, fn);
       tail = work.catch(() => {});
@@ -65,6 +79,7 @@
           await chrome.storage.sync.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' });
           const raw = await chrome.storage.sync.get(null);
           if (raw[MIG] !== 1) {
+            /** @type {Record<string, unknown>} */
             const prefs = {};
             for (const k of Object.keys(S.DEFAULTS))
               if (Object.hasOwn(raw, k) && S.validatePreferences({ [k]: raw[k] })) prefs[k] = raw[k];
@@ -110,19 +125,22 @@
         )
           throw failure('corrupt');
         if (!config.sites[origin]) config.sites[origin] = { defaults: null, projects: {} };
-        if (scope === 'defaults') config.sites[origin].defaults = p;
-        else config.sites[origin].projects[scope] = p;
+        // Unchecked here; checked(config) below validates the assembled config before anyone reads it.
+        const stored = /** @type {Profile} */ (p);
+        if (scope === 'defaults') config.sites[origin].defaults = stored;
+        else config.sites[origin].projects[scope] = stored;
       }
       const normalized = checked(config, 'corrupt');
       const position = raw[POS] === undefined ? { ...S.DEFAULT_POSITION } : raw[POS];
       if (!S.validatePosition(position)) throw failure('corrupt');
       return { config: normalized, preferences, position, raw };
     }
+    /** @param {chrome.runtime.MessageSender | undefined} sender @returns {{ ui: boolean, origin: string | null }} */
     function trust(sender) {
       if (!sender || sender.id !== chrome.runtime.id) throw failure('forbidden');
       let u;
       try {
-        u = new URL(sender.url);
+        u = new URL(String(sender.url));
       } catch {
         throw failure('forbidden');
       }
@@ -138,13 +156,14 @@
       const origin = S.normalizeOrigin(u.origin);
       let top;
       try {
-        top = new URL(sender.tab.url).origin;
+        top = new URL(String(sender.tab.url)).origin;
       } catch {
         throw failure('forbidden');
       }
       if (!origin || top !== origin || (sender.origin && sender.origin !== origin)) throw failure('forbidden');
       return { ui: false, origin };
     }
+    /** @param {string} [type] @returns {Promise<{ delivered: number, undelivered: number }>} */
     async function notify(type = 'jpt:settings-changed') {
       try {
         await chrome.runtime.sendMessage({ type });
@@ -156,11 +175,11 @@
         tabs.map(async (tab) => {
           let origin;
           try {
-            origin = S.normalizeOrigin(new URL(tab.url).origin);
+            origin = S.normalizeOrigin(new URL(String(tab.url)).origin);
           } catch {}
           if (!origin) return;
           try {
-            await chrome.tabs.sendMessage(tab.id, { type }, { frameId: 0 });
+            await chrome.tabs.sendMessage(/** @type {number} */ (tab.id), { type }, { frameId: 0 });
             delivered++;
           } catch {
             undelivered++;
@@ -169,8 +188,10 @@
       );
       return { delivered, undelivered };
     }
+    /** @param {Config} config @param {Awaited<ReturnType<typeof read>>} old @param {boolean} [backup] */
     async function writeConfig(config, old, backup = true) {
       checked(config);
+      /** @type {Record<string, unknown>} */
       const patch = {};
       // Null records make removal part of the same commit as profile replacement.
       for (const k of Object.keys(old.raw)) if (k.startsWith(PREFIX)) patch[k] = null;
@@ -197,7 +218,8 @@
         await chrome.storage.sync.set(patch);
       } catch (error) {
         if (backup) {
-          if (previous[BACKUP] === undefined) await chrome.storage.local.remove(BACKUP);
+          // previous was read above whenever backup is true.
+          if (previous?.[BACKUP] === undefined) await chrome.storage.local.remove(BACKUP);
           else await chrome.storage.local.set({ [BACKUP]: previous[BACKUP] });
         }
         throw error;
@@ -206,7 +228,9 @@
       const retired = Object.keys(patch).filter((k) => patch[k] === null);
       if (retired.length) await chrome.storage.sync.remove(retired).catch(() => {});
     }
-    async function execute(message, sender) {
+    /** @param {unknown} input @param {chrome.runtime.MessageSender} sender @returns {Promise<SettingsReply>} */
+    async function execute(input, sender) {
+      const message = /** @type {Loose} */ (input);
       const access = trust(sender);
       if (!message || typeof message !== 'object' || Array.isArray(message) || typeof message.type !== 'string')
         throw failure('invalid');
@@ -214,7 +238,7 @@
       if (
         message.type !== 'jpt:' + method ||
         !Object.hasOwn(SHAPES, method) ||
-        Object.keys(message).some((k) => k !== 'type' && !SHAPES[method].includes(k))
+        Object.keys(message).some((k) => k !== 'type' && !(/** @type {readonly string[]} */ (SHAPES[/** @type {SettingsMethod} */ (method)]).includes(k)))
       )
         throw failure('invalid');
       if (!access.ui && !['getContext', 'savePreferences', 'savePosition'].includes(method)) throw failure('forbidden');
@@ -271,6 +295,7 @@
         if (message.replace !== undefined && typeof message.replace !== 'boolean') throw failure('invalid');
         const incoming = checked(message.config),
           merged = structuredClone(all.config),
+          /** @type {ImportConflict['conflicts']} */
           conflicts = [];
         for (const [origin, site] of Object.entries(incoming.sites)) {
           const dest = merged.sites[origin] || (merged.sites[origin] = { defaults: null, projects: {} });
@@ -285,7 +310,7 @@
         }
         if (incoming.appearance) {
           for (const site of Object.values(incoming.sites))
-            for (const p of [site.defaults, ...Object.values(site.projects)].filter(Boolean))
+            for (const p of [site.defaults, ...Object.values(site.projects)].filter((x) => x !== null))
               p.settings = { ...incoming.appearance, ...p.settings };
           for (const [origin, site] of Object.entries(incoming.sites)) {
             if (site.defaults) merged.sites[origin].defaults = site.defaults;
@@ -307,12 +332,16 @@
       await notify().catch(() => {});
       return { ok: true };
     }
+    /** @param {unknown} message @param {chrome.runtime.MessageSender} sender @returns {Promise<BrokerResponse>} */
     function handle(message, sender) {
       return serial(async () => {
         try {
           return { ok: true, value: await execute(message, sender) };
-        } catch (e) {
-          const code = Object.hasOwn(messageKeys, e.code) ? e.code : 'storage';
+        } catch (thrown) {
+          // Same reads as before typing: a thrown null still fails here, as it did.
+          const e = /** @type {{ code?: unknown, errors?: ValidationError[] }} */ (thrown);
+          /** @type {BrokerErrorCode} */
+          const code = Object.hasOwn(messageKeys, /** @type {PropertyKey} */ (e.code)) ? /** @type {BrokerErrorCode} */ (e.code) : 'storage';
           return { ok: false, code, message: t(messageKeys[code]), ...(e.errors ? { errors: e.errors } : {}) };
         }
       });

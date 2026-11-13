@@ -1,18 +1,31 @@
+// @ts-check
+/** @import { PropertyValue, Profile, Preferences } from './types/domain' */
+/** @import { JiraField, JiraIssueType } from './types/jira' */
+/** @import { SettingsContext } from './types/messages' */
+/** @import { ProfileSource, SessionResult } from './types/runtime' */
 (/** @param {typeof globalThis} root */ function (root) {
   'use strict';
-  const t = (key, params) => (root.JptI18n || require('./i18n.js').forLocale()).t(key, params);
+  const t = (/** @type {string} */ key, /** @type {Record<string, unknown> | undefined} */ params = undefined) => (root.JptI18n || require('./i18n.js').forLocale()).t(key, params);
   const S = () => root.JptSettings || require('./settings.js');
   class RuntimeSession {
+    /**
+     * @param {{ api: ReturnType<typeof import('./jiraApi.js').createApi>, client: Pick<ReturnType<typeof import('./settings_client.js').createClient>, 'getContext'> }} deps
+     */
     constructor({ api, client }) {
       this.api = api;
       this.client = client;
       this.epoch = 0;
+      /** @type {AbortController | null} */
       this.controller = null;
+      /** @type {{ fields: JiraField[], types: JiraIssueType[], time: number } | null} */
       this.metadata = null;
+      /** @type {string | null} */
       this.identity = null;
+      /** @type {PropertyValue | null} */
       this.remote = null;
     }
     // The project property wins over an imported file; personal preferences apply on top of either.
+    /** @param {SettingsContext} context @returns {{ profile: Profile | null, settings: Preferences, source: ProfileSource }} */
     effective(context) {
       if (this.remote)
         return {
@@ -30,6 +43,7 @@
       this.metadata = null;
       this.remote = null;
     }
+    /** @param {string} origin @param {string | null} projectKey @returns {Promise<SessionResult>} */
     async load(origin, projectKey) {
       this.controller?.abort();
       this.controller = new AbortController();
@@ -39,18 +53,21 @@
         if (epoch !== this.epoch || signal.aborted) throw new DOMException('Cancelled', 'AbortError');
       };
       // Without a project there is no property to read; only an imported file can apply.
+      /** @type {string | null} */
       let projectId = null;
+      /** @type {string[]} */
       const details = [];
       this.remote = null;
       if (projectKey) {
         const project = await this.api.getProject(projectKey, { signal });
         check();
         if (!/^\d+$/.test(String(project?.id))) throw new Error('Project unavailable');
-        projectId = String(project.id);
+        projectId = String(project?.id);
         let property = null;
         try {
           property = await this.api.getProjectProperty(projectId, { signal });
-        } catch (e) {
+        } catch (thrown) {
+          const e = /** @type {{ name?: unknown, status?: unknown }} */ (thrown);
           if (e.name === 'AbortError' || e.status === 401) throw e;
           details.push(t('sessionPropertyUnavailable'));
         }
@@ -77,29 +94,32 @@
           settings: { ...context.settings, enabled: false },
           inputSignature,
         };
+      /** @type {Profile} a deep copy that the checks below may trim */
       const profile = JSON.parse(JSON.stringify(chosen.profile)),
         settings = { ...chosen.settings };
       const user = await this.api.getMyself({ signal });
       check();
       if (!user?.accountId) {
+        /** @type {Error & { status?: number }} */
         const e = new Error('Please sign in');
         e.status = 401;
         throw e;
       }
       if (this.identity !== user.accountId) this.metadata = null;
       this.identity = user.accountId;
-      if (!this.metadata || Date.now() - this.metadata.time > 300000) {
+      let metadata = this.metadata;
+      if (!metadata || Date.now() - metadata.time > 300000) {
         const [fields, types] = await Promise.all([this.api.getFields({ signal }), this.api.getTypes({ signal })]);
         check();
         if (!Array.isArray(fields) || !Array.isArray(types)) throw new Error('Metadata unavailable');
-        this.metadata = { fields, types, time: Date.now() };
+        metadata = this.metadata = { fields, types, time: Date.now() };
       }
       let disabledTypes = 0,
         totalTypes = 0;
-      for (const role of ['planning', 'milestone', 'epic']) {
+      for (const role of /** @type {const} */ (['planning', 'milestone', 'epic'])) {
         const configured = profile.issueTypes[role];
         totalTypes += configured.length;
-        const usable = configured.filter((id) => this.metadata.types.some((t) => String(t.id) === id));
+        const usable = configured.filter((id) => metadata.types.some((t) => String(t.id) === id));
         if (usable.length !== configured.length) {
           details.push(t('sessionTypesUnavailable'));
           disabledTypes += configured.length - usable.length;
@@ -119,6 +139,7 @@
       if (!profile.issueTypes.planning.length) settings.ptTargetEndShade = false;
       if (!profile.issueTypes.epic.length) settings.epicStripe = false;
       if (!profile.issueTypes.milestone.length || !profile.progress.enabled) settings.msShowProgress = false;
+      /** @type {Record<keyof Profile['fields'], string>} */
       const labels = {
         role: 'fieldRole',
         epicHighlight: 'fieldEpicHighlight',
@@ -131,10 +152,11 @@
         startDate: !!(settings.showWorkingDays || settings.ptTargetEndShade || settings.msShowProgress),
         targetEnd: !!settings.ptTargetEndShade,
       };
-      for (const [name, relevant] of Object.entries(needed)) {
+      for (const [key, relevant] of Object.entries(needed)) {
         if (!relevant) continue;
+        const name = /** @type {keyof Profile['fields']} */ (key);
         const id = profile.fields[name],
-          field = id && this.metadata.fields.find((f) => f.id === id);
+          field = id && metadata.fields.find((f) => f.id === id);
         const date = ['startDate', 'targetEnd'].includes(name);
         if (!field || (date && field.schema?.type !== 'date')) {
           details.push(t('sessionFieldUnavailable', { field: t(labels[name]) }));
@@ -156,8 +178,9 @@
         const links = await this.api.getLinkTypes({ signal });
         check();
         if (!Array.isArray(links?.issueLinkTypes)) throw new Error('Link types unavailable');
+        const types = links.issueLinkTypes;
         const allowed = profile.progress.linkTypeIds.filter((id) =>
-          links.issueLinkTypes.some((x) => String(x.id) === id),
+          types.some((x) => String(x.id) === id),
         );
         if (allowed.length !== profile.progress.linkTypeIds.length || !allowed.length) {
           details.push(t('sessionProgressUnavailable'));
@@ -177,8 +200,9 @@
         settings,
         inputSignature,
         source: chosen.source,
-        sourceLabel: chosen.source === 'property' ? this.remote.generatedBy : '',
-        sourceUpdatedAt: chosen.source === 'property' ? this.remote.updatedAt : '',
+        // effective() picks 'property' only when this.remote is set.
+        sourceLabel: chosen.source === 'property' && this.remote ? this.remote.generatedBy : '',
+        sourceUpdatedAt: chosen.source === 'property' && this.remote ? this.remote.updatedAt : '',
       };
     }
   }
